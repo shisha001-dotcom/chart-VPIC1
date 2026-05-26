@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Excel Dashboard</title>
+
+  <!-- ApexCharts -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+  <!-- SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <h1>📊 AI Excel Dashboard</h1>
+      <p>Upload Excel → Auto Generate Charts</p>
+    </div>
+
+    <div class="upload-box">
+      <input type="file" id="excelFile" accept=".xlsx,.xls">
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <h3>Total Rows</h3>
+        <h2 id="totalRows">0</h2>
+      </div>
+
+      <div class="kpi-card">
+        <h3>Total Revenue</h3>
+        <h2 id="totalRevenue">0</h2>
+      </div>
+
+      <div class="kpi-card">
+        <h3>Categories</h3>
+        <h2 id="totalCategory">0</h2>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+
+      <div class="chart-card">
+        <h3>Revenue Trend</h3>
+        <div id="lineChart"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Category Distribution</h3>
+        <div id="pieChart"></div>
+      </div>
+
+    </div>
+
+    <div class="table-card">
+      <h3>Excel Preview</h3>
+
+      <table id="dataTable">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+
+</body>
+</html>
