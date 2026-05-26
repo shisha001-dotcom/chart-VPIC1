@@ -1,0 +1,66 @@
+/* =============================================
+   CHARTS.CSS — ApexCharts Theme Overrides
+   ============================================= */
+
+.apexcharts-canvas {
+  background: transparent !important;
+}
+
+.apexcharts-text,
+.apexcharts-title-text,
+.apexcharts-legend-text {
+  fill: #8b92a5 !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+.apexcharts-xaxis-label,
+.apexcharts-yaxis-label {
+  fill: #555d6e !important;
+}
+
+.apexcharts-gridline {
+  stroke: rgba(255,255,255,0.05) !important;
+}
+
+.apexcharts-tooltip {
+  background: #1a1e26 !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+  border-radius: 8px !important;
+}
+
+.apexcharts-tooltip-title {
+  background: #13161b !important;
+  border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+  color: #e8eaf0 !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+.apexcharts-tooltip-text {
+  color: #e8eaf0 !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+.apexcharts-xaxistooltip,
+.apexcharts-yaxistooltip {
+  background: #1a1e26 !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: #e8eaf0 !important;
+}
+
+.apexcharts-menu {
+  background: #1a1e26 !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+}
+
+.apexcharts-menu-item:hover {
+  background: #13161b !important;
+}
+
+.apexcharts-legend {
+  padding: 0 8px 4px !important;
+}
+
+.apexcharts-datalabel {
+  font-family: 'DM Mono', monospace !important;
+}
