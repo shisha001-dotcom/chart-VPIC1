@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DataViz Studio</title>
+  <title>DataViz Studio Pro</title>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,12 +12,13 @@
   <!-- ApexCharts -->
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-  <!-- SheetJS -->
+  <!-- SheetJS for Excel parsing -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <!-- html2canvas for export -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
+  <!-- Stylesheets -->
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/charts.css">
@@ -27,27 +28,27 @@
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <span class="logo-icon">◈</span>
-      <span class="logo-text">DataViz</span>
+      <span class="logo-icon">📊</span>
+      <span class="logo-text">DataViz Pro</span>
     </div>
 
     <nav class="sidebar-nav">
       <button class="nav-btn active" data-view="dashboard">
-        <span class="nav-icon">▦</span> Dashboard
+        <span class="nav-icon">📈</span> Dashboard
       </button>
       <button class="nav-btn" data-view="charts">
-        <span class="nav-icon">◎</span> Charts
+        <span class="nav-icon">🎨</span> Chart Builder
       </button>
       <button class="nav-btn" data-view="table">
-        <span class="nav-icon">≡</span> Data Table
+        <span class="nav-icon">📋</span> Data Table
       </button>
     </nav>
 
     <div class="sidebar-file">
       <label class="upload-btn" for="excelFile">
-        <span class="upload-icon">⊕</span>
+        <span class="upload-icon">⬆</span>
         <span>Load Excel</span>
-        <input type="file" id="excelFile" accept=".xlsx,.xls" hidden>
+        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" hidden>
       </label>
       <div class="file-info" id="fileInfo">No file loaded</div>
     </div>
@@ -61,40 +62,44 @@
       <button class="sidebar-toggle" id="sidebarToggle">☰</button>
       <div class="topbar-title" id="topbarTitle">Dashboard Overview</div>
       <div class="topbar-actions">
-        <button class="btn-export" id="exportBtn" title="Export chart as image" disabled>
-          ↓ Export PNG
+        <button class="btn-export" id="exportDashboardBtn" title="Export dashboard as image" disabled>
+          ⬇ Export PNG
         </button>
       </div>
     </header>
 
-    <!-- Views -->
+    <!-- Views Container -->
     <div class="view-container">
 
       <!-- DASHBOARD VIEW -->
       <section class="view active" id="view-dashboard">
+        <div class="dashboard-header">
+          <h2>Data Insights</h2>
+          <button class="btn-refresh" id="refreshBtn" title="Refresh charts">🔄 Refresh</button>
+        </div>
+
         <div class="kpi-grid" id="kpiGrid">
-          <!-- KPI cards injected by JS -->
           <div class="kpi-empty">
-            <div class="empty-icon">◈</div>
-            <p>Upload an Excel file to see insights</p>
+            <div class="empty-icon">📊</div>
+            <p>Upload an Excel file to start analyzing</p>
           </div>
         </div>
 
         <div class="charts-grid" id="dashboardChartsGrid">
-          <!-- Auto charts injected here -->
+          <!-- Auto-generated charts injected here -->
         </div>
       </section>
 
-      <!-- CHARTS VIEW -->
+      <!-- CHARTS BUILDER VIEW -->
       <section class="view" id="view-charts">
         <div class="chart-builder">
           <div class="builder-panel">
-            <h2 class="panel-title">Chart Builder</h2>
+            <h2 class="panel-title">Create Custom Chart</h2>
 
             <div class="field-group">
               <label>Chart Type</label>
               <div class="chart-type-grid" id="chartTypeGrid">
-                <!-- Populated by JS -->
+                <!-- Auto-populated -->
               </div>
             </div>
 
@@ -133,30 +138,30 @@
             <div class="field-group">
               <label>Color Palette</label>
               <div class="palette-grid" id="paletteGrid">
-                <!-- Populated by JS -->
+                <!-- Auto-populated -->
               </div>
             </div>
 
             <button class="btn-primary" id="buildChartBtn">
-              Build Chart ▶
+              🎨 Build Chart
             </button>
           </div>
 
           <div class="chart-preview" id="chartPreview">
             <div class="preview-empty" id="previewEmpty">
-              <div class="empty-icon">◎</div>
+              <div class="empty-icon">🎨</div>
               <p>Configure and build your chart</p>
             </div>
             <div id="customChartContainer"></div>
             <div class="chart-actions" id="chartActions" style="display:none">
-              <button class="btn-secondary" id="addToDashboardBtn">+ Add to Dashboard</button>
-              <button class="btn-secondary" id="downloadChartBtn">↓ Download PNG</button>
+              <button class="btn-secondary" id="addToDashboardBtn">➕ Add to Dashboard</button>
+              <button class="btn-secondary" id="downloadChartBtn">⬇ Download PNG</button>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- TABLE VIEW -->
+      <!-- DATA TABLE VIEW -->
       <section class="view" id="view-table">
         <div class="table-wrapper">
           <div class="table-toolbar">
@@ -175,13 +180,18 @@
     </div>
   </main>
 
-  <!-- Toast notification -->
+  <!-- Toast Notification -->
   <div class="toast" id="toast"></div>
 
-  <!-- Scripts -->
+  <!-- Loading Spinner -->
+  <div class="spinner" id="spinner"></div>
+
+  <!-- JavaScript Modules -->
   <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
   <script src="js/data.js"></script>
   <script src="js/charts.js"></script>
+  <script src="js/dashboard.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/app.js"></script>
 
