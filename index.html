@@ -194,6 +194,13 @@
     <div class="drag-overlay-text">📂 Drop your Excel/CSV file here</div>
   </div>
 
-<script src="app.js"></script>
+  <!-- Modules — thứ tự load quan trọng -->
+  <script src="js/config.js"></script>    <!-- Hằng số, cấu hình -->
+  <script src="js/utils.js"></script>     <!-- Hàm tiện ích -->
+  <script src="js/data.js"></script>      <!-- Xử lý dữ liệu, aggregation -->
+  <script src="js/charts.js"></script>    <!-- Build & render chart -->
+  <script src="js/dashboard.js"></script> <!-- Dashboard, KPI cards -->
+  <script src="js/ui.js"></script>        <!-- Giao diện, event listeners -->
+  <script src="app.js"></script>          <!-- Entry point -->
 </body>
 </html>
