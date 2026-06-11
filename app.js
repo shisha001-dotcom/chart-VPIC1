@@ -2,18 +2,18 @@
    CONFIG
    ============================================= */
 const CHART_TYPES = [
-  { id:'line',         label:'Line',         icon:'📈', desc:'Xu hướng theo thời gian' },
-  { id:'area',         label:'Area',         icon:'🏔', desc:'Vùng lấp đầy' },
-  { id:'bar',          label:'Bar',          icon:'📊', desc:'So sánh ngang' },
-  { id:'column',       label:'Column',       icon:'📉', desc:'So sánh dọc' },
-  { id:'column-single',label:'Col Đơn',      icon:'🟦', desc:'Cột đơn - 1 series' },
-  { id:'column-group', label:'Col Nhóm',     icon:'🟧', desc:'Cột nhóm nhiều series' },
-  { id:'combo',        label:'Combo',        icon:'📊', desc:'Cột + Đường dual-axis' },
-  { id:'pie',          label:'Pie',          icon:'🥧', desc:'Tỷ lệ phần trăm' },
-  { id:'donut',        label:'Donut',        icon:'⭕', desc:'Phân phối' },
-  { id:'scatter',      label:'Scatter',      icon:'✦',  desc:'Tương quan' },
-  { id:'radar',        label:'Radar',        icon:'◎',  desc:'Đa trục' },
-  { id:'boxplot',      label:'Box Plot',     icon:'📦', desc:'Phân phối' },
+  { id:'line',         label:'Line',       icon:'📈', desc:'Xu hướng theo thời gian' },
+  { id:'area',         label:'Area',       icon:'🏔', desc:'Vùng lấp đầy' },
+  { id:'bar',          label:'Bar',        icon:'📊', desc:'So sánh ngang' },
+  { id:'column',       label:'Column',     icon:'📉', desc:'So sánh dọc' },
+  { id:'column-single',label:'Col Đơn',    icon:'🟦', desc:'Cột đơn - 1 series' },
+  { id:'column-group', label:'Col Nhóm',   icon:'🟧', desc:'Cột nhóm nhiều series' },
+  { id:'combo',        label:'Combo',      icon:'📊', desc:'Cột + Đường dual-axis' },
+  { id:'pie',          label:'Pie',        icon:'🥧', desc:'Tỷ lệ %' },
+  { id:'donut',        label:'Donut',      icon:'⭕', desc:'Phân phối' },
+  { id:'scatter',      label:'Scatter',    icon:'✦',  desc:'Tương quan' },
+  { id:'radar',        label:'Radar',      icon:'◎',  desc:'Đa trục' },
+  { id:'boxplot',      label:'Box Plot',   icon:'📦', desc:'Phân phối' },
 ];
 
 const PALETTES = [
@@ -112,6 +112,7 @@ function parseSheet(wb, sheetName) {
    UTILS
    ============================================= */
 function formatNumber(n) {
+  if (n === null || n === undefined || isNaN(n)) return '0';
   if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(2) + 'B';
   if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + 'M';
   if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(1) + 'K';
@@ -286,18 +287,14 @@ function buildColumn(data, base, xKey, yKey, groupKey, method) {
 function buildColumnSingle(data, base, xKey, yKey, method) {
   const agg = aggregate(data, xKey, yKey, null, method);
   if (!agg) return null;
-  const singleSeries = [{ name: yKey, data: agg.series[0]?.data || [] }];
   return {
-    ...base,
-    chart: { ...base.chart, type: 'bar' },
-    series: singleSeries,
-    xaxis: { categories: agg.categories, title: { text: xKey }, labels: { rotate: -30 } },
-    yaxis: { title: { text: yKey }, labels: { formatter: v => formatNumber(v) } },
-    plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 4,
-      dataLabels: { position: 'top' } } },
-    dataLabels: { enabled: true, formatter: v => formatNumber(v), offsetY: -18,
-      style: { fontSize: '10px', colors: ['#8b92a5'] } },
-    tooltip: { y: { formatter: v => formatNumber(v) } },
+    ...base, chart:{...base.chart, type:'bar'},
+    series:[{ name: yKey, data: agg.series[0]?.data || [] }],
+    xaxis:{categories:agg.categories, title:{text:xKey}, labels:{rotate:-30}},
+    yaxis:{title:{text:yKey}, labels:{formatter:v=>formatNumber(v)}},
+    plotOptions:{bar:{horizontal:false, columnWidth:'55%', borderRadius:4, dataLabels:{position:'top'}}},
+    dataLabels:{enabled:true, formatter:v=>formatNumber(v), offsetY:-18, style:{fontSize:'10px', colors:['#8b92a5']}},
+    tooltip:{y:{formatter:v=>formatNumber(v)}},
   };
 }
 
@@ -306,15 +303,13 @@ function buildColumnGroup(data, base, xKey, yKey, groupKey, method) {
   const agg = aggregate(data, xKey, yKey, groupKey, method);
   if (!agg) return null;
   return {
-    ...base,
-    chart: { ...base.chart, type: 'bar' },
-    series: agg.series,
-    xaxis: { categories: agg.categories, title: { text: xKey }, labels: { rotate: -30 } },
-    yaxis: { title: { text: yKey }, labels: { formatter: v => formatNumber(v) } },
-    plotOptions: { bar: { horizontal: false, columnWidth: '70%', borderRadius: 3, grouped: true } },
-    dataLabels: { enabled: false },
-    tooltip: { y: { formatter: v => formatNumber(v) } },
-    legend: { ...base.legend, position: 'top' },
+    ...base, chart:{...base.chart, type:'bar'}, series:agg.series,
+    xaxis:{categories:agg.categories, title:{text:xKey}, labels:{rotate:-30}},
+    yaxis:{title:{text:yKey}, labels:{formatter:v=>formatNumber(v)}},
+    plotOptions:{bar:{horizontal:false, columnWidth:'70%', borderRadius:3, grouped:true}},
+    dataLabels:{enabled:false},
+    tooltip:{y:{formatter:v=>formatNumber(v)}},
+    legend:{...base.legend, position:'top'},
   };
 }
 
@@ -323,28 +318,23 @@ function buildCombo(data, base, xKey, yKey, y2Key, method) {
   const agg1 = aggregate(data, xKey, yKey, null, method);
   const agg2 = aggregate(data, xKey, y2Key, null, method);
   if (!agg1 || !agg2) return null;
-  const categories = agg1.categories;
   return {
-    ...base,
-    chart: { ...base.chart, type: 'line', stacked: false },
-    series: [
-      { name: yKey,  type: 'column', data: agg1.series[0]?.data || [] },
-      { name: y2Key, type: 'line',   data: agg2.series[0]?.data || [] },
+    ...base, chart:{...base.chart, type:'line', stacked:false},
+    series:[
+      { name:yKey,  type:'column', data:agg1.series[0]?.data || [] },
+      { name:y2Key, type:'line',   data:agg2.series[0]?.data || [] },
     ],
-    xaxis: { categories, title: { text: xKey }, labels: { rotate: -30 } },
-    yaxis: [
-      { seriesName: yKey,  title: { text: yKey,  style: { color: base.colors[0] } },
-        labels: { formatter: v => formatNumber(v), style: { colors: base.colors[0] } } },
-      { seriesName: y2Key, opposite: true,
-        title: { text: y2Key, style: { color: base.colors[1] } },
-        labels: { formatter: v => formatNumber(v), style: { colors: base.colors[1] } } },
+    xaxis:{categories:agg1.categories, title:{text:xKey}, labels:{rotate:-30}},
+    yaxis:[
+      { seriesName:yKey,  title:{text:yKey,  style:{color:base.colors[0]}}, labels:{formatter:v=>formatNumber(v), style:{colors:base.colors[0]}} },
+      { seriesName:y2Key, opposite:true, title:{text:y2Key, style:{color:base.colors[1]}}, labels:{formatter:v=>formatNumber(v), style:{colors:base.colors[1]}} },
     ],
-    plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 4 } },
-    stroke: { width: [0, 2.5], curve: 'smooth' },
-    markers: { size: [0, 4] },
-    dataLabels: { enabled: false },
-    tooltip: { shared: true, intersect: false, y: { formatter: v => formatNumber(v) } },
-    legend: { ...base.legend, position: 'top' },
+    plotOptions:{bar:{horizontal:false, columnWidth:'55%', borderRadius:4}},
+    stroke:{width:[0,2.5], curve:'smooth'},
+    markers:{size:[0,4]},
+    dataLabels:{enabled:false},
+    tooltip:{shared:true, intersect:false, y:{formatter:v=>formatNumber(v)}},
+    legend:{...base.legend, position:'top'},
   };
 }
 
@@ -365,7 +355,10 @@ function buildDonut(data, base, xKey, yKey, method) {
 }
 
 function buildScatter(data, base, xKey, yKey) {
-  const points = data.map(row => { const x=Number(row[xKey]), y=Number(row[yKey]); return (!isNaN(x) && !isNaN(y)) ? [x, y] : null; }).filter(Boolean);
+  const points = data.map(row => {
+    const x = Number(row[xKey]), y = Number(row[yKey]);
+    return (!isNaN(x) && !isNaN(y)) ? [x, y] : null;
+  }).filter(Boolean);
   if (!points.length) return null;
   return { ...base, chart:{...base.chart, type:'scatter', zoom:{enabled:true}},
     series:[{name:yKey, data:points}],
@@ -389,18 +382,20 @@ function buildBoxPlot(data, base, xKey, yKey) {
     if (!grouped[x]) grouped[x] = [];
     grouped[x].push(y);
   });
-  const series = [{ name: yKey, type: 'boxPlot', data: Object.keys(grouped).map(x => {
+  const cats = Object.keys(grouped);
+  const series = [{ name: yKey, type: 'boxPlot', data: cats.map(x => {
     const v = grouped[x].sort((a, b) => a - b);
-    return [Math.min(...v), v[Math.floor(v.length*.25)], v[Math.floor(v.length/2)], v[Math.floor(v.length*.75)], Math.max(...v)];
+    const q1 = v[Math.floor(v.length*.25)], q2 = v[Math.floor(v.length/2)], q3 = v[Math.floor(v.length*.75)];
+    return { x, y: [Math.min(...v), q1, q2, q3, Math.max(...v)] };
   }) }];
-  return { ...base, chart:{...base.chart, type:'boxPlot'}, series, xaxis:{categories:Object.keys(grouped)} };
+  return { ...base, chart:{...base.chart, type:'boxPlot'}, series, xaxis:{categories:cats} };
 }
 
 function renderChart(containerId, chartConfig) {
   if (!chartConfig) return null;
   const container = document.getElementById(containerId);
   if (!container) return null;
-  if (_charts[containerId]) { _charts[containerId].destroy(); }
+  if (_charts[containerId]) { try { _charts[containerId].destroy(); } catch(e){} }
   const chart = new ApexCharts(container, chartConfig);
   chart.render();
   _charts[containerId] = chart;
@@ -408,11 +403,11 @@ function renderChart(containerId, chartConfig) {
 }
 
 function destroyChart(chartId) {
-  if (_charts[chartId]) { _charts[chartId].destroy(); delete _charts[chartId]; }
+  if (_charts[chartId]) { try { _charts[chartId].destroy(); } catch(e){} delete _charts[chartId]; }
 }
 
 function clearAllCharts() {
-  Object.keys(_charts).forEach(id => { if (_charts[id]) _charts[id].destroy(); });
+  Object.keys(_charts).forEach(id => destroyChart(id));
   _charts = {};
 }
 
@@ -493,7 +488,6 @@ function addChartToDashboard(config, data, index) {
   block.className = 'chart-block';
   block.style.animationDelay = `${0.1 + index * 0.06}s`;
   block.dataset.chartId = chartId;
-  block.dataset.config = JSON.stringify(config);
 
   const altTypes = getAlternativeTypes(config.type);
   const switchBtns = altTypes.map(t => {
@@ -505,8 +499,8 @@ function addChartToDashboard(config, data, index) {
     <div class="chart-block-header">
       <input class="chart-title-input" value="${config.title}" title="Nhấn để sửa tiêu đề">
       <div class="chart-block-actions">
-        <button class="chart-block-btn" data-action="download" data-chart-id="${chartId}" title="Tải ảnh">⬇ PNG</button>
-        <button class="chart-block-btn danger" data-action="remove" data-chart-id="${chartId}" title="Xóa">✕</button>
+        <button class="chart-block-btn" data-action="download" title="Tải ảnh">⬇ PNG</button>
+        <button class="chart-block-btn danger" data-action="remove" title="Xóa">✕</button>
       </div>
     </div>
     <div class="chart-block-body" id="${chartId}"></div>
@@ -525,8 +519,8 @@ function addChartToDashboard(config, data, index) {
   });
 
   block.querySelectorAll('.chart-switch-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const newType = e.target.dataset.type;
+    btn.addEventListener('click', () => {
+      const newType = btn.dataset.type;
       const dc = _dashboardCharts.find(c => c.chartId === chartId);
       if (!dc) return;
       dc.config.type = newType;
@@ -570,7 +564,7 @@ async function exportDashboard() {
     link.click();
     showToast('✓ Xuất dashboard thành công!', 'success');
   } catch(err) {
-    showToast('Lỗi khi xuất dashboard', 'error');
+    showToast('Lỗi khi xuất dashboard: ' + err.message, 'error');
   } finally { showSpinner(false); }
 }
 
@@ -612,8 +606,7 @@ function renderDataTable(data) {
   thead.appendChild(hr);
 
   tbody.innerHTML = '';
-  const display = data.slice(0, 2000);
-  display.forEach(row => {
+  data.slice(0, 2000).forEach(row => {
     const tr = document.createElement('tr');
     columns.forEach(col => {
       const td = document.createElement('td');
@@ -626,7 +619,7 @@ function renderDataTable(data) {
     tbody.appendChild(tr);
   });
 
-  document.getElementById('tableCount').textContent = `${display.length} / ${data.length} dòng`;
+  document.getElementById('tableCount').textContent = `${Math.min(data.length, 2000)} / ${data.length} dòng`;
   document.getElementById('exportCsvBtn').disabled = false;
 }
 
@@ -647,7 +640,7 @@ function exportCSV() {
   if (!data.length) return;
   const cols = Object.keys(data[0]);
   const rows = [cols.join(','), ...data.map(r => cols.map(c => `"${String(r[c] ?? '').replace(/"/g, '""')}"`).join(','))];
-  const blob = new Blob([rows.join('\n')], { type:'text/csv;charset=utf-8;' });
+  const blob = new Blob(['\uFEFF' + rows.join('\n')], { type:'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = `${_currentSheetName || 'data'}.csv`;
@@ -669,15 +662,16 @@ function setupChartTypeGrid() {
     btn.innerHTML = `<div class="chart-type-icon">${type.icon}</div><div>${type.label}</div>`;
     btn.addEventListener('click', () => {
       grid.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected'); sel = type.id;
-      const y2group = document.getElementById('y2AxisGroup');
-      const ggroup  = document.getElementById('groupSelect').closest('.field-group');
+      btn.classList.add('selected');
+      sel = type.id;
+      const y2group  = document.getElementById('y2AxisGroup');
+      const ggroup   = document.getElementById('groupFieldGroup');
       if (type.id === 'combo') {
         y2group.style.display = 'flex';
-        if (ggroup) ggroup.style.display = 'none';
+        ggroup.style.display  = 'none';
       } else {
         y2group.style.display = 'none';
-        if (ggroup) ggroup.style.display = 'flex';
+        ggroup.style.display  = 'flex';
       }
     });
     grid.appendChild(btn);
@@ -691,10 +685,12 @@ function setupPaletteGrid() {
   PALETTES.forEach((p, i) => {
     const btn = document.createElement('button');
     btn.className = `palette-btn${i === 0 ? ' selected' : ''}`;
-    btn.style.background = p.swatch; btn.title = p.name;
+    btn.style.background = p.swatch;
+    btn.title = p.name;
     btn.addEventListener('click', () => {
       grid.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected'); sel = p;
+      btn.classList.add('selected');
+      sel = p;
     });
     grid.appendChild(btn);
   });
@@ -708,6 +704,7 @@ function populateColumnSelects(columns, roles) {
   const gSel  = document.getElementById('groupSelect');
   [xSel, ySel, y2Sel].forEach(s => { s.innerHTML = '<option value="">— Chọn cột —</option>'; });
   gSel.innerHTML = '<option value="">— Không nhóm —</option>';
+
   columns.forEach(col => {
     const roleTag = { numeric:'[#]', date:'[D]', category:'[A]' }[roles[col]] || '';
     [xSel, ySel, y2Sel, gSel].forEach(s => {
@@ -716,6 +713,7 @@ function populateColumnSelects(columns, roles) {
       s.appendChild(o);
     });
   });
+
   const numCols  = columns.filter(c => roles[c] === 'numeric');
   const catCols  = columns.filter(c => roles[c] === 'category');
   const dateCols = columns.filter(c => roles[c] === 'date');
@@ -725,23 +723,24 @@ function populateColumnSelects(columns, roles) {
 }
 
 function setupNavigation() {
+  const views = { dashboard:'📊 Dashboard Overview', charts:'🎨 Chart Builder', table:'📋 Data Table' };
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const viewId = `view-${btn.dataset.view}`;
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      const target = document.getElementById(viewId);
+      const target = document.getElementById(`view-${btn.dataset.view}`);
       if (target) target.classList.add('active');
-      const titles = { dashboard:'📊 Dashboard Overview', charts:'🎨 Chart Builder', table:'📋 Data Table' };
-      document.getElementById('topbarTitle').textContent = titles[btn.dataset.view] || 'DataViz Pro';
+      document.getElementById('topbarTitle').textContent = views[btn.dataset.view] || 'DataViz Pro';
+      if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
     });
   });
 }
 
 function setupFileUpload() {
-  const fileInput = document.getElementById('excelFile');
-  fileInput.addEventListener('change', e => loadFile(e.target.files[0]));
+  document.getElementById('excelFile').addEventListener('change', e => {
+    if (e.target.files[0]) loadFile(e.target.files[0]);
+  });
 
   document.addEventListener('dragover', e => {
     e.preventDefault();
@@ -768,7 +767,6 @@ function setupFileUpload() {
       populateColumnSelects(result.columns, result.roles);
       generateDashboard(rows, result.roles);
       renderDataTable(rows);
-      document.getElementById('rowBadge').textContent = rows.length.toLocaleString() + ' dòng';
       showToast(`✓ Đã chuyển sang sheet: ${e.target.value}`, 'success');
     } catch(err) { showToast('Lỗi đọc sheet: ' + err.message, 'error'); }
   });
@@ -781,7 +779,7 @@ async function loadFile(file) {
     const wb = await parseExcelFile(file);
     const sheetName = wb.SheetNames[0];
     const rows = parseSheet(wb, sheetName);
-    if (!rows.length) { showToast('File Excel rỗng', 'error'); return; }
+    if (!rows.length) { showToast('File Excel rỗng', 'error'); showSpinner(false); return; }
 
     setSheetName(sheetName);
     const result = loadData(rows);
@@ -801,19 +799,19 @@ async function loadFile(file) {
     document.getElementById('refreshBtn').disabled = false;
     document.getElementById('exportCsvBtn').disabled = false;
     document.getElementById('dashHeaderActions').style.display = 'flex';
-    document.getElementById('rowBadge').textContent = rows.length.toLocaleString() + ' dòng';
     document.getElementById('dashboardTitle').textContent = file.name.replace(/\.[^.]+$/, '');
 
+    // Switch to dashboard view
     document.querySelector('[data-view="dashboard"]').click();
-
     showToast(`✓ Đã tải ${rows.length.toLocaleString()} dòng từ "${sheetName}"`, 'success', 4000);
   } catch(err) {
     showToast('Lỗi: ' + err.message, 'error');
+    console.error(err);
   } finally { showSpinner(false); }
 }
 
 /* =============================================
-   CHART BUILDER SETUP
+   CHART BUILDER
    ============================================= */
 let getSelectedChartType, getSelectedPalette;
 
@@ -827,21 +825,21 @@ function setupChartBuilder() {
     const data = getRawData();
     if (!data.length) { showToast('Chưa có dữ liệu', 'error'); return; }
     const config = {
-      type: getSelectedChartType(),
-      xKey: document.getElementById('xAxisSelect').value,
-      yKey: document.getElementById('yAxisSelect').value,
-      y2Key: document.getElementById('y2AxisSelect').value || null,
+      type:     getSelectedChartType(),
+      xKey:     document.getElementById('xAxisSelect').value,
+      yKey:     document.getElementById('yAxisSelect').value,
+      y2Key:    document.getElementById('y2AxisSelect').value || null,
       groupKey: document.getElementById('groupSelect').value || null,
-      agg: document.getElementById('aggSelect').value,
-      title: document.getElementById('chartTitleInput').value || `Biểu đồ ${_dashboardCharts.length + 1}`
+      agg:      document.getElementById('aggSelect').value,
+      title:    document.getElementById('chartTitleInput').value || `Biểu đồ ${_dashboardCharts.length + 1}`
     };
     addChartToDashboard(config, data, _dashboardCharts.length);
     showToast('✓ Đã thêm vào Dashboard!', 'success');
     document.querySelector('[data-view="dashboard"]').click();
   });
 
-  document.getElementById('downloadChartBtn').addEventListener('click', () => exportChartPNG('customChartContainer', 'custom-chart.png'));
-  document.getElementById('downloadChartSVGBtn').addEventListener('click', () => exportChartPNG('customChartContainer', 'custom-chart-svg.png'));
+  document.getElementById('downloadChartBtn').addEventListener('click', () =>
+    exportChartPNG('customChartContainer', 'custom-chart.png'));
 }
 
 function buildCustomChart() {
@@ -855,7 +853,7 @@ function buildCustomChart() {
   const data      = getRawData();
 
   if (!xKey) { showToast('Vui lòng chọn trục X', 'error'); return; }
-  if (!data.length) { showToast('Chưa có dữ liệu', 'error'); return; }
+  if (!data.length) { showToast('Chưa có dữ liệu — hãy upload file trước', 'error'); return; }
   if (chartType === 'combo' && !y2Key) { showToast('Combo chart cần chọn cả Trục Y2', 'error'); return; }
 
   const cfg = buildChartConfig(chartType, data, palette.colors, xKey, yKey, groupKey, method, y2Key);
@@ -881,7 +879,9 @@ function setupTable() {
     searchTimer = setTimeout(() => {
       const q = e.target.value.toLowerCase();
       if (!q) { renderDataTable(getRawData()); return; }
-      const filtered = getRawData().filter(row => Object.values(row).some(v => String(v).toLowerCase().includes(q)));
+      const filtered = getRawData().filter(row =>
+        Object.values(row).some(v => String(v).toLowerCase().includes(q))
+      );
       renderDataTable(filtered);
     }, 200);
   });
@@ -889,24 +889,16 @@ function setupTable() {
 }
 
 /* =============================================
-   EXPORT MODAL SETUP
+   EXPORT MODAL
    ============================================= */
 function setupExportModal() {
   const overlay = document.getElementById('exportModal');
   document.getElementById('exportDashboardBtn').addEventListener('click', () => overlay.classList.add('show'));
   document.getElementById('exportModalClose').addEventListener('click', () => overlay.classList.remove('show'));
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('show'); });
-
-  document.getElementById('exportPNG').addEventListener('click', async () => {
-    overlay.classList.remove('show'); await exportDashboard();
-  });
-  document.getElementById('exportAllCharts').addEventListener('click', async () => {
-    overlay.classList.remove('show'); await exportAllCharts();
-  });
-  document.getElementById('exportCSVModal').addEventListener('click', () => {
-    overlay.classList.remove('show'); exportCSV();
-  });
-
+  document.getElementById('exportPNG').addEventListener('click', async () => { overlay.classList.remove('show'); await exportDashboard(); });
+  document.getElementById('exportAllCharts').addEventListener('click', async () => { overlay.classList.remove('show'); await exportAllCharts(); });
+  document.getElementById('exportCSVModal').addEventListener('click', () => { overlay.classList.remove('show'); exportCSV(); });
   document.getElementById('refreshBtn').addEventListener('click', () => {
     const data = getRawData();
     if (!data.length) { showToast('Chưa có dữ liệu', 'error'); return; }
@@ -916,31 +908,31 @@ function setupExportModal() {
 }
 
 /* =============================================
+   SIDEBAR TOGGLE
+   ============================================= */
+function setupSidebar() {
+  const toggle = document.getElementById('sidebarToggle');
+  const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('main');
+
+  toggle.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      sidebar.classList.toggle('open');
+    } else {
+      sidebar.classList.toggle('collapsed');
+      main.style.marginLeft = sidebar.classList.contains('collapsed') ? '0' : 'var(--sidebar-w)';
+    }
+  });
+}
+
+/* =============================================
    INIT
    ============================================= */
 (function init() {
   setupNavigation();
-
-  document.getElementById('sidebarToggle').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('collapsed');
-  });
-
+  setupSidebar();
   setupFileUpload();
   setupChartBuilder();
   setupTable();
   setupExportModal();
-
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (window.innerWidth <= 768) {
-        document.getElementById('sidebar').classList.remove('open');
-      }
-    });
-  });
-
-  if (window.innerWidth <= 768) {
-    document.getElementById('sidebarToggle').addEventListener('click', () => {
-      document.getElementById('sidebar').classList.toggle('open');
-    });
-  }
 })();
