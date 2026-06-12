@@ -220,6 +220,8 @@ function populateColumnSelects(columns, roles) {
   if (catCols.length || dateCols.length) xSel.value = dateCols[0] || catCols[0];
   if (numCols.length)     ySel.value  = numCols[0];
   if (numCols.length > 1) y2Sel.value = numCols[1];
+
+  _populateComboMultiCols(columns, roles);
 }
 
 // ── Chart Builder UI ───────────────────────────
@@ -227,37 +229,78 @@ function setupChartTypeGrid() {
   const grid = document.getElementById('chartTypeGrid');
   let sel = 'column';
 
-  CHART_TYPES.forEach(type => {
-    const btn = document.createElement('button');
-    btn.className   = `chart-type-btn${type.id === sel ? ' selected' : ''}`;
-    btn.dataset.type = type.id;
-    btn.title       = type.desc;
-    btn.innerHTML   = `<div class="chart-type-icon">${type.icon}</div><div>${type.label}</div>`;
-    btn.addEventListener('click', () => {
-      grid.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      sel = type.id;
-      // Combo: ẩn Group By, hiện Y2
-      const y2group = document.getElementById('y2AxisGroup');
-      const ggroup  = document.getElementById('groupFieldGroup');
-      if (type.id === 'combo') {
-        y2group.style.display = 'flex';
-        ggroup.style.display  = 'none';
-      } else {
-        y2group.style.display = 'none';
-        ggroup.style.display  = 'flex';
-      }
+  // Render theo nhóm
+  CHART_TYPE_GROUPS.forEach(group => {
+    const types = CHART_TYPES.filter(t => t.group === group.id);
+    if (!types.length) return;
+
+    const groupLabel = document.createElement('div');
+    groupLabel.className   = 'chart-type-group-label';
+    groupLabel.textContent = group.label;
+    grid.appendChild(groupLabel);
+
+    const row = document.createElement('div');
+    row.className = 'chart-type-row';
+
+    types.forEach(type => {
+      const btn = document.createElement('button');
+      btn.className    = `chart-type-btn${type.id === sel ? ' selected' : ''}`;
+      btn.dataset.type = type.id;
+      btn.title        = type.desc;
+      btn.innerHTML    = `<div class="chart-type-icon">${type.icon}</div><div>${type.label}</div>`;
+      btn.addEventListener('click', () => {
+        grid.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        sel = type.id;
+        _updateBuilderFields(type.id);
+      });
+      row.appendChild(btn);
     });
-    grid.appendChild(btn);
+    grid.appendChild(row);
   });
 
   return () => sel;
 }
 
+// Ẩn/hiện field group tùy loại chart
+function _updateBuilderFields(typeId) {
+  const y2group       = document.getElementById('y2AxisGroup');
+  const ggroup        = document.getElementById('groupFieldGroup');
+  const xgroup        = document.getElementById('xAxisGroup');
+  const ygroup        = document.getElementById('yAxisGroup');
+  const comboMultiGrp = document.getElementById('comboMultiGroup');
+
+  // Reset về mặc định
+  y2group.style.display       = 'none';
+  ggroup.style.display        = 'flex';
+  xgroup.style.display        = 'flex';
+  ygroup.style.display        = 'flex';
+  comboMultiGrp.style.display = 'none';
+
+  if (typeId === 'combo') {
+    y2group.style.display = 'flex';
+    ggroup.style.display  = 'none';
+  } else if (typeId === 'combo-multi') {
+    comboMultiGrp.style.display = 'flex';
+    ggroup.style.display        = 'none';
+    y2group.style.display       = 'none';
+    ygroup.style.display        = 'none';
+  } else if (typeId === 'histogram') {
+    xgroup.style.display = 'none'; // histogram tự tính bins, chỉ cần Y
+    ggroup.style.display = 'none';
+  } else if (typeId === 'heatmap') {
+    // groupKey = cột Y axis của heatmap
+    const gLabel = document.querySelector('#groupFieldGroup > label');
+    if (gLabel) gLabel.textContent = 'TRỤC Y (HEATMAP)';
+  } else {
+    const gLabel = document.querySelector('#groupFieldGroup > label');
+    if (gLabel) gLabel.textContent = 'Group By (optional)';
+  }
+}
+
 function setupPaletteGrid() {
   const grid = document.getElementById('paletteGrid');
   let sel = PALETTES[0];
-
   PALETTES.forEach((p, i) => {
     const btn = document.createElement('button');
     btn.className        = `palette-btn${i === 0 ? ' selected' : ''}`;
@@ -270,8 +313,37 @@ function setupPaletteGrid() {
     });
     grid.appendChild(btn);
   });
-
   return () => sel;
+}
+
+// Populate combo-multi column checkboxes
+function _populateComboMultiCols(columns, roles) {
+  const barList  = document.getElementById('comboBarCols');
+  const lineList = document.getElementById('comboLineCols');
+  if (!barList || !lineList) return;
+  barList.innerHTML = lineList.innerHTML = '';
+  const numCols = columns.filter(c => roles[c] === 'numeric');
+  numCols.forEach((col, i) => {
+    const mkCb = (listEl, checked) => {
+      const lbl = document.createElement('label');
+      lbl.className = 'combo-col-label';
+      const cb = document.createElement('input');
+      cb.type    = 'checkbox';
+      cb.value   = col;
+      cb.checked = checked;
+      lbl.append(cb, document.createTextNode(' ' + col));
+      listEl.appendChild(lbl);
+    };
+    mkCb(barList,  i < 2);
+    mkCb(lineList, i >= 2 && i < 4);
+  });
+}
+
+function _getComboMultiConfig() {
+  const barCols  = [...document.querySelectorAll('#comboBarCols  input:checked')].map(c=>c.value);
+  const lineCols = [...document.querySelectorAll('#comboLineCols input:checked')].map(c=>c.value);
+  const lineOnRight = [...document.querySelectorAll('#comboLineRight input:checked')].map(c=>c.value);
+  return { barCols, lineCols, lineOnRight };
 }
 
 let getSelectedChartType, getSelectedPalette;
@@ -285,14 +357,16 @@ function setupChartBuilder() {
   document.getElementById('addToDashboardBtn').addEventListener('click', () => {
     const data = getRawData();
     if (!data.length) { showToast('Chưa có dữ liệu', 'error'); return; }
+    const chartType = getSelectedChartType();
     const config = {
-      type:     getSelectedChartType(),
-      xKey:     document.getElementById('xAxisSelect').value,
-      yKey:     document.getElementById('yAxisSelect').value,
-      y2Key:    document.getElementById('y2AxisSelect').value || null,
-      groupKey: document.getElementById('groupSelect').value || null,
-      agg:      document.getElementById('aggSelect').value,
-      title:    document.getElementById('chartTitleInput').value || `Biểu đồ ${_dashboardCharts.length + 1}`,
+      type:        chartType,
+      xKey:        document.getElementById('xAxisSelect').value,
+      yKey:        document.getElementById('yAxisSelect').value,
+      y2Key:       document.getElementById('y2AxisSelect').value || null,
+      groupKey:    document.getElementById('groupSelect').value || null,
+      agg:         document.getElementById('aggSelect').value,
+      title:       document.getElementById('chartTitleInput').value || `Biểu đồ ${_dashboardCharts.length + 1}`,
+      extraConfig: chartType === 'combo-multi' ? _getComboMultiConfig() : undefined,
     };
     addChartToDashboard(config, data, _dashboardCharts.length);
     showToast('✓ Đã thêm vào Dashboard!', 'success');
@@ -313,11 +387,23 @@ function buildCustomChart() {
   const method    = document.getElementById('aggSelect').value;
   const data      = getRawData();
 
-  if (!xKey)        { showToast('Vui lòng chọn trục X', 'error'); return; }
   if (!data.length) { showToast('Chưa có dữ liệu — hãy upload file trước', 'error'); return; }
-  if (chartType === 'combo' && !y2Key) { showToast('Combo chart cần chọn cả Trục Y2', 'error'); return; }
 
-  const cfg = buildChartConfig(chartType, data, palette.colors, xKey, yKey, groupKey, method, y2Key);
+  // Validate theo loại
+  if (chartType === 'combo'       && !y2Key)  { showToast('Combo chart cần chọn Trục Y2', 'error'); return; }
+  if (chartType === 'histogram'   && !yKey)   { showToast('Histogram cần chọn cột số Y', 'error'); return; }
+  if (chartType === 'heatmap'     && !groupKey) { showToast('Heatmap cần chọn cột Trục Y', 'error'); return; }
+  if (!['histogram','combo-multi'].includes(chartType) && !xKey) {
+    showToast('Vui lòng chọn trục X', 'error'); return;
+  }
+
+  const extraConfig = chartType === 'combo-multi' ? _getComboMultiConfig() : undefined;
+  if (chartType === 'combo-multi') {
+    const ec = extraConfig;
+    if (!ec.barCols.length && !ec.lineCols.length) { showToast('Combo Pro: chọn ít nhất 1 cột', 'error'); return; }
+  }
+
+  const cfg = buildChartConfig(chartType, data, palette.colors, xKey, yKey, groupKey, method, y2Key, extraConfig);
   if (!cfg) { showToast('Không thể tạo biểu đồ với dữ liệu đã chọn', 'error'); return; }
 
   document.getElementById('previewEmpty').style.display = 'none';
@@ -325,7 +411,7 @@ function buildCustomChart() {
   document.getElementById('chartActions').style.display = 'flex';
 
   if (!document.getElementById('chartTitleInput').value)
-    document.getElementById('chartTitleInput').value = `${yKey || xKey} theo ${xKey}`;
+    document.getElementById('chartTitleInput').value = `${yKey || xKey || chartType}`;
 
   showToast('✓ Biểu đồ đã được tạo!', 'success');
 }
