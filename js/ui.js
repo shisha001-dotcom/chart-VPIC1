@@ -331,31 +331,82 @@ function buildCustomChart() {
 }
 
 // ── Data Table ─────────────────────────────────
-let _tableData = [], _sortCol = null, _sortDir = 'asc';
+let _tableData    = [];   // dữ liệu đang hiển thị (có thể đã filter)
+let _sortCol      = null;
+let _sortDir      = 'asc';
+let _selectedRows = new Set(); // index trong _tableData của các dòng đang tick
 
+// Render bảng — gọi lại mỗi khi data/sort thay đổi
 function renderDataTable(data) {
-  _tableData = data;
+  _tableData    = data;
+  _selectedRows = new Set();   // reset selection khi re-render
+  _renderTableDOM();
+  _updateSelectionBar();
+}
+
+function _renderTableDOM() {
+  const data  = _tableData;
   const table = document.getElementById('dataTable');
   const thead = table.querySelector('thead');
   const tbody = table.querySelector('tbody');
-  if (!data || !data.length) { thead.innerHTML = ''; tbody.innerHTML = ''; return; }
+  if (!data || !data.length) { thead.innerHTML = ''; tbody.innerHTML = ''; _updateCount(0, 0); return; }
 
   const columns = Object.keys(data[0]);
+  const display = data.slice(0, 2000);
+
+  // ── Header ──
   thead.innerHTML = '';
   const hr = document.createElement('tr');
+
+  // Checkbox "chọn tất cả"
+  const thCb = document.createElement('th');
+  thCb.className = 'th-cb';
+  const cbAll = document.createElement('input');
+  cbAll.type  = 'checkbox';
+  cbAll.id    = 'cbSelectAll';
+  cbAll.title = 'Chọn / bỏ chọn tất cả';
+  cbAll.addEventListener('change', () => _toggleSelectAll(cbAll.checked, display.length));
+  thCb.appendChild(cbAll);
+  hr.appendChild(thCb);
+
   columns.forEach(col => {
     const th = document.createElement('th');
-    th.textContent  = col;
-    th.dataset.col  = col;
+    th.textContent = col;
+    th.dataset.col = col;
     if (_sortCol === col) th.classList.add(_sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
     th.addEventListener('click', () => sortTable(col));
     hr.appendChild(th);
   });
   thead.appendChild(hr);
 
+  // ── Rows ──
   tbody.innerHTML = '';
-  data.slice(0, 2000).forEach(row => {
+  display.forEach((row, idx) => {
     const tr = document.createElement('tr');
+    if (_selectedRows.has(idx)) tr.classList.add('row-selected');
+
+    // Checkbox ô đầu
+    const tdCb = document.createElement('td');
+    tdCb.className = 'td-cb';
+    const cb = document.createElement('input');
+    cb.type    = 'checkbox';
+    cb.checked = _selectedRows.has(idx);
+    cb.addEventListener('change', () => {
+      if (cb.checked) _selectedRows.add(idx); else _selectedRows.delete(idx);
+      tr.classList.toggle('row-selected', cb.checked);
+      _updateSelectionBar();
+      _syncSelectAllCheckbox(display.length);
+    });
+    tdCb.appendChild(cb);
+    tr.appendChild(tdCb);
+
+    // Click cả dòng cũng toggle checkbox
+    tr.addEventListener('click', e => {
+      if (e.target.tagName === 'INPUT') return; // tránh double-toggle
+      cb.checked = !cb.checked;
+      cb.dispatchEvent(new Event('change'));
+    });
+
     columns.forEach(col => {
       const td    = document.createElement('td');
       const val   = row[col];
@@ -367,8 +418,89 @@ function renderDataTable(data) {
     tbody.appendChild(tr);
   });
 
-  document.getElementById('tableCount').textContent = `${Math.min(data.length, 2000)} / ${data.length} dòng`;
-  document.getElementById('exportCsvBtn').disabled  = false;
+  _updateCount(display.length, data.length);
+  document.getElementById('exportCsvBtn').disabled = false;
+}
+
+function _updateCount(shown, total) {
+  document.getElementById('tableCount').textContent =
+    `${shown.toLocaleString()} / ${total.toLocaleString()} dòng`;
+}
+
+// ── Select all / deselect all ──────────────────
+function _toggleSelectAll(checked, count) {
+  _selectedRows = checked ? new Set([...Array(count).keys()]) : new Set();
+  // Re-render rows chỉ để update class + checkbox — không reset selection
+  const tbody = document.getElementById('dataTable').querySelector('tbody');
+  tbody.querySelectorAll('tr').forEach((tr, idx) => {
+    const cb = tr.querySelector('input[type=checkbox]');
+    if (cb) cb.checked = checked;
+    tr.classList.toggle('row-selected', checked);
+  });
+  _updateSelectionBar();
+}
+
+function _syncSelectAllCheckbox(total) {
+  const cbAll = document.getElementById('cbSelectAll');
+  if (!cbAll) return;
+  if (_selectedRows.size === 0)     { cbAll.checked = false; cbAll.indeterminate = false; }
+  else if (_selectedRows.size === total) { cbAll.checked = true;  cbAll.indeterminate = false; }
+  else                               { cbAll.checked = false; cbAll.indeterminate = true; }
+}
+
+// ── Selection action bar ───────────────────────
+function _updateSelectionBar() {
+  const bar   = document.getElementById('selectionBar');
+  const count = _selectedRows.size;
+  if (!bar) return;
+  if (count === 0) { bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+  document.getElementById('selCount').textContent = `${count} dòng đã chọn`;
+}
+
+// Xóa các dòng đang được chọn
+function deleteSelectedRows() {
+  if (!_selectedRows.size) return;
+  const indices  = new Set(_selectedRows);
+  const newData  = _tableData.filter((_, i) => !indices.has(i));
+  const removed  = _tableData.filter((_, i) =>  indices.has(i));
+
+  // Cập nhật _rawData trong data.js
+  _overwriteRawData(newData);
+
+  renderDataTable(newData);
+  _rebuildDashboardFromCurrent();
+  showToast(`🗑 Đã xóa ${removed.length} dòng — còn ${newData.length} dòng`, 'info', 3500);
+}
+
+// Chỉ giữ các dòng đang được chọn, xóa phần còn lại
+function keepSelectedRows() {
+  if (!_selectedRows.size) return;
+  const kept    = _tableData.filter((_, i) => _selectedRows.has(i));
+  const removed = _tableData.length - kept.length;
+
+  _overwriteRawData(kept);
+  renderDataTable(kept);
+  _rebuildDashboardFromCurrent();
+  showToast(`✓ Giữ lại ${kept.length} dòng, đã bỏ ${removed} dòng`, 'success', 3500);
+}
+
+// Reset: khôi phục về toàn bộ dữ liệu gốc
+function resetTableData() {
+  const original = getOriginalData();
+  _overwriteRawData(original);
+  renderDataTable(original);
+  _rebuildDashboardFromCurrent();
+  showToast('↺ Đã khôi phục toàn bộ dữ liệu gốc', 'info', 3000);
+}
+
+// Cập nhật dashboard sau khi edit dữ liệu
+function _rebuildDashboardFromCurrent() {
+  const data  = getRawData();
+  const roles = getRoles();
+  if (!data.length) return;
+  populateColumnSelects(Object.keys(data[0]), roles);
+  generateDashboard(data, roles);
 }
 
 function sortTable(col) {
@@ -382,7 +514,15 @@ function sortTable(col) {
       ? String(va).localeCompare(String(vb))
       : String(vb).localeCompare(String(va));
   });
-  renderDataTable(sorted);
+  // Giữ selection sau khi sort bằng cách map lại object ref
+  const selectedObjects = new Set([..._selectedRows].map(i => _tableData[i]));
+  _tableData = sorted;
+  _selectedRows = new Set(
+    sorted.map((row, i) => selectedObjects.has(row) ? i : -1).filter(i => i >= 0)
+  );
+  _renderTableDOM();
+  _syncSelectAllCheckbox(Math.min(sorted.length, 2000));
+  _updateSelectionBar();
 }
 
 function exportCSV() {
@@ -415,6 +555,16 @@ function setupTable() {
     }, 200);
   });
   document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+
+  // Selection bar buttons
+  document.getElementById('btnDeleteSelected').addEventListener('click', deleteSelectedRows);
+  document.getElementById('btnKeepSelected').addEventListener('click',  keepSelectedRows);
+  document.getElementById('btnResetData').addEventListener('click',     resetTableData);
+  document.getElementById('btnClearSel').addEventListener('click', () => {
+    _selectedRows = new Set();
+    _renderTableDOM();
+    _updateSelectionBar();
+  });
 }
 
 // ── Export modal ───────────────────────────────
