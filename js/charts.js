@@ -11,7 +11,7 @@
 let _charts = {};
 
 // ── Router ─────────────────────────────────────
-function buildChartConfig(type, data, colors, xKey, yKey, groupKey, method, y2Key) {
+function buildChartConfig(type, data, colors, xKey, yKey, groupKey, method, y2Key, extraConfig) {
   const base = JSON.parse(JSON.stringify(APEX_BASE));
   base.colors = colors;
   switch (type) {
@@ -21,10 +21,16 @@ function buildChartConfig(type, data, colors, xKey, yKey, groupKey, method, y2Ke
     case 'column':        return buildColumn(data, base, xKey, yKey, groupKey, method);
     case 'column-single': return buildColumnSingle(data, base, xKey, yKey, method);
     case 'column-group':  return buildColumnGroup(data, base, xKey, yKey, groupKey, method);
+    case 'waterfall':     return buildWaterfall(data, base, xKey, yKey, method);
     case 'combo':         return buildCombo(data, base, xKey, yKey, y2Key || groupKey, method);
+    case 'combo-multi':   return buildComboMulti(data, base, xKey, extraConfig || {}, method);
     case 'pie':           return buildPie(data, base, xKey, yKey, method);
     case 'donut':         return buildDonut(data, base, xKey, yKey, method);
+    case 'treemap':       return buildTreemap(data, base, xKey, yKey, method);
+    case 'funnel':        return buildFunnel(data, base, xKey, yKey, method);
+    case 'histogram':     return buildHistogram(data, base, yKey);
     case 'scatter':       return buildScatter(data, base, xKey, yKey);
+    case 'heatmap':       return buildHeatmap(data, base, xKey, yKey, groupKey, method);
     case 'radar':         return buildRadar(data, base, xKey, yKey, groupKey, method);
     case 'boxplot':       return buildBoxPlot(data, base, xKey, yKey);
     default: return null;
@@ -221,6 +227,273 @@ function buildBoxPlot(data, base, xKey, yKey) {
     }),
   }];
   return { ...base, chart:{...base.chart, type:'boxPlot'}, series, xaxis:{categories:cats} };
+}
+
+// ── WATERFALL ──────────────────────────────────
+// Tự tính running total, tô màu xanh/đỏ theo dấu giá trị
+function buildWaterfall(data, base, xKey, yKey, method) {
+  const agg = aggregate(data, xKey, yKey, null, method);
+  if (!agg) return null;
+
+  const rawVals = agg.series[0]?.data || [];
+  let running = 0;
+  const series = [{
+    name: yKey,
+    data: rawVals.map((v, i) => {
+      const isTotal = i === rawVals.length - 1;
+      const from    = isTotal ? 0 : running;
+      const to      = isTotal ? rawVals.reduce((a, b) => a + b, 0) : running + v;
+      if (!isTotal) running += v;
+      return {
+        x:      agg.categories[i],
+        y:      [from, to],
+        goals:  [],
+        fillColor: isTotal
+          ? '#4f8ef7'
+          : v >= 0 ? '#4ade80' : '#f87171',
+      };
+    }),
+  }];
+
+  return {
+    ...base,
+    chart:       { ...base.chart, type:'rangeBar' },
+    series,
+    plotOptions: { bar:{ horizontal:false, columnWidth:'55%', borderRadius:3 } },
+    xaxis:       { categories:agg.categories, labels:{rotate:-30} },
+    yaxis:       { labels:{formatter:v=>formatNumber(v)} },
+    dataLabels:  {
+      enabled: true,
+      formatter(val, opts) {
+        const [from, to] = val;
+        return formatNumber(to - from);
+      },
+      style:{ fontSize:'10px', colors:['#e8eaf0'] },
+    },
+    tooltip: {
+      custom({ dataPointIndex, w }) {
+        const pt   = w.config.series[0].data[dataPointIndex];
+        const diff = pt.y[1] - pt.y[0];
+        const sign = diff >= 0 ? '+' : '';
+        return `<div style="padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:12px">
+          <b>${pt.x}</b><br/>
+          Giá trị: <b>${sign}${formatNumber(diff)}</b><br/>
+          Tích lũy: <b>${formatNumber(pt.y[1])}</b>
+        </div>`;
+      },
+    },
+    legend: { show:false },
+  };
+}
+
+// ── COMBO MULTI (N cột + M đường) ──────────────
+// extraConfig = { barCols:['col1','col2'], lineCols:['col3','col4'], lineOnRight:['col3'] }
+function buildComboMulti(data, base, xKey, extraConfig, method) {
+  const { barCols = [], lineCols = [], lineOnRight = [] } = extraConfig;
+  if (!barCols.length && !lineCols.length) return null;
+
+  const allCols  = [...barCols, ...lineCols];
+  const cats     = [...new Set(data.map(r => String(r[xKey] ?? '').trim()))];
+  const series   = [];
+  const yaxes    = [];
+  const strokeW  = [];
+  const markerSz = [];
+
+  allCols.forEach((col, i) => {
+    const isLine  = lineCols.includes(col);
+    const isRight = lineOnRight.includes(col);
+    const vals    = cats.map(cat => {
+      const rows = data.filter(r => String(r[xKey] ?? '').trim() === cat);
+      return applyAgg(rows.map(r => Number(r[col]) || 0), method);
+    });
+
+    series.push({ name:col, type: isLine ? 'line' : 'column', data:vals });
+    strokeW.push(isLine ? 2.5 : 0);
+    markerSz.push(isLine ? 4 : 0);
+
+    yaxes.push({
+      seriesName: col,
+      opposite:   isRight,
+      show:       i === 0 || isRight,
+      title:      { text: isRight ? col : (i === 0 ? col : undefined), style:{ color: base.colors[i % base.colors.length] } },
+      labels:     { formatter:v=>formatNumber(v), style:{ colors: base.colors[i % base.colors.length] } },
+    });
+  });
+
+  return {
+    ...base,
+    chart:       { ...base.chart, type:'line', stacked:false },
+    series,
+    xaxis:       { categories:cats, labels:{rotate:-30} },
+    yaxis:       yaxes,
+    stroke:      { width:strokeW, curve:'smooth' },
+    markers:     { size:markerSz },
+    plotOptions: { bar:{ columnWidth:'60%', borderRadius:3 } },
+    dataLabels:  { enabled:false },
+    tooltip:     { shared:true, intersect:false, y:{formatter:v=>formatNumber(v)} },
+    legend:      { ...base.legend, position:'top' },
+  };
+}
+
+// ── TREEMAP ────────────────────────────────────
+function buildTreemap(data, base, xKey, yKey, method) {
+  const dist = countByCategory(data, xKey, yKey, method);
+  if (!dist || !dist.labels.length) return null;
+
+  const series = [{
+    data: dist.labels.map((l, i) => ({ x:l, y:dist.values[i] })),
+  }];
+
+  return {
+    ...base,
+    chart:       { ...base.chart, type:'treemap' },
+    series,
+    plotOptions: {
+      treemap: {
+        distributed: true,
+        enableShades: true,
+        shadeIntensity: 0.3,
+        dataLabels: { format:'scale' },
+      },
+    },
+    dataLabels: {
+      enabled: true,
+      style:   { fontSize:'13px', fontFamily:"'DM Sans',sans-serif" },
+      formatter(text, op) {
+        return [text, formatNumber(op.value)];
+      },
+    },
+    tooltip: { y:{ formatter:v=>formatNumber(v) } },
+    legend:  { show:false },
+  };
+}
+
+// ── FUNNEL ─────────────────────────────────────
+function buildFunnel(data, base, xKey, yKey, method) {
+  const dist = countByCategory(data, xKey, yKey, method);
+  if (!dist || !dist.labels.length) return null;
+
+  // Sắp từ lớn đến nhỏ
+  const paired = dist.labels.map((l, i) => ({ l, v:dist.values[i] }))
+    .sort((a, b) => b.v - a.v);
+
+  return {
+    ...base,
+    chart:       { ...base.chart, type:'bar' },
+    series:      [{ name:yKey || xKey, data:paired.map(p => p.v) }],
+    xaxis:       { categories: paired.map(p => p.l) },
+    yaxis:       { labels:{ formatter:v=>formatNumber(v) } },
+    plotOptions: {
+      bar: {
+        horizontal:    true,
+        distributed:   true,
+        isFunnel:      true,
+        borderRadius:  4,
+        dataLabels:    { position:'center' },
+      },
+    },
+    dataLabels: {
+      enabled:   true,
+      formatter: (val, { dataPointIndex:i }) =>
+        `${paired[i].l}: ${formatNumber(val)}`,
+      style:{ fontSize:'12px', colors:['#e8eaf0'] },
+      dropShadow:{ enabled:false },
+    },
+    tooltip: { y:{ formatter:v=>formatNumber(v) } },
+    legend:  { show:false },
+  };
+}
+
+// ── HISTOGRAM ──────────────────────────────────
+// Tự chia bins từ cột số, không cần xKey
+function buildHistogram(data, base, yKey) {
+  if (!yKey) return null;
+  const vals = data.map(r => Number(r[yKey])).filter(v => !isNaN(v));
+  if (!vals.length) return null;
+
+  const min   = Math.min(...vals);
+  const max   = Math.max(...vals);
+  const bins  = Math.min(20, Math.ceil(Math.sqrt(vals.length)));
+  const width = (max - min) / bins || 1;
+
+  const counts   = new Array(bins).fill(0);
+  const labels   = [];
+  for (let i = 0; i < bins; i++) {
+    const lo = min + i * width;
+    const hi = lo + width;
+    labels.push(`${formatNumber(lo)}–${formatNumber(hi)}`);
+  }
+  vals.forEach(v => {
+    const idx = Math.min(Math.floor((v - min) / width), bins - 1);
+    counts[idx]++;
+  });
+
+  return {
+    ...base,
+    chart:       { ...base.chart, type:'bar' },
+    series:      [{ name:'Tần suất', data:counts }],
+    xaxis:       { categories:labels, labels:{ rotate:-35, style:{fontSize:'10px'} }, title:{text:yKey} },
+    yaxis:       { title:{text:'Số dòng'}, labels:{formatter:v=>Math.round(v)} },
+    plotOptions: { bar:{ horizontal:false, columnWidth:'95%', borderRadius:2 } },
+    dataLabels:  { enabled:false },
+    tooltip:     {
+      custom({ dataPointIndex:i }) {
+        return `<div style="padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:12px">
+          <b>${labels[i]}</b><br/>Số dòng: <b>${counts[i]}</b>
+        </div>`;
+      },
+    },
+  };
+}
+
+// ── HEATMAP ────────────────────────────────────
+// xKey = cột X, yKey = cột giá trị số, groupKey = cột Y (series)
+function buildHeatmap(data, base, xKey, yKey, groupKey, method) {
+  if (!groupKey) return null;
+  const xCats  = [...new Set(data.map(r => String(r[xKey]  ?? '').trim()))];
+  const yCats  = [...new Set(data.map(r => String(r[groupKey] ?? '').trim()))];
+
+  const series = yCats.map(yc => ({
+    name: yc,
+    data: xCats.map(xc => {
+      const rows = data.filter(r =>
+        String(r[xKey] ?? '').trim() === xc &&
+        String(r[groupKey] ?? '').trim() === yc
+      );
+      return {
+        x: xc,
+        y: rows.length ? applyAgg(rows.map(r => Number(r[yKey]) || 0), method) : 0,
+      };
+    }),
+  }));
+
+  return {
+    ...base,
+    chart:  { ...base.chart, type:'heatmap' },
+    series,
+    xaxis:  { categories:xCats, labels:{rotate:-30} },
+    plotOptions: {
+      heatmap: {
+        shadeIntensity: 0.6,
+        radius:         2,
+        useFillColorAsStroke: false,
+        colorScale: {
+          ranges: [
+            { from:-1e9, to:0,    color:'#f87171', name:'Âm' },
+            { from:0,    to:1e9,  color:'#4f8ef7', name:'Dương' },
+          ],
+        },
+      },
+    },
+    dataLabels: {
+      enabled:   true,
+      formatter: v => formatNumber(v),
+      style:     { fontSize:'10px', colors:['rgba(255,255,255,0.7)'] },
+    },
+    tooltip:  { y:{ formatter:v=>formatNumber(v) } },
+    legend:   { show:false },
+    stroke:   { width:2, colors:['#0d0f12'] },
+  };
 }
 
 // ── Render / Destroy ───────────────────────────
