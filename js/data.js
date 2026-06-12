@@ -11,18 +11,33 @@
    ============================================= */
 
 // ── State ──────────────────────────────────────
-let _rawData = [];
-let _columns = [];
-let _detectedRoles = {};
+let _rawData        = [];
+let _originalData   = [];  // bản gốc, không bao giờ bị sửa — dùng để reset
+let _columns        = [];
+let _detectedRoles  = {};
 let _currentSheetName = '';
-let _workbook = null;
+let _workbook       = null;
 
 // ── Getters ────────────────────────────────────
-function getRawData()    { return _rawData; }
-function getColumns()    { return _columns; }
-function getRoles()      { return _detectedRoles; }
-function getWorkbook()   { return _workbook; }
-function setSheetName(n) { _currentSheetName = n; }
+function getRawData()      { return _rawData; }
+function getOriginalData() { return _originalData; }
+function getColumns()      { return _columns; }
+function getRoles()        { return _detectedRoles; }
+function getWorkbook()     { return _workbook; }
+function setSheetName(n)   { _currentSheetName = n; }
+
+/**
+ * Ghi đè _rawData (dùng sau khi xóa/lọc dòng từ Data Table)
+ * Không đụng vào _originalData
+ */
+function _overwriteRawData(rows) {
+  _rawData  = rows;
+  _columns  = rows.length ? Object.keys(rows[0]) : [];
+  // Giữ nguyên roles cũ, chỉ cập nhật những cột còn lại
+  const newRoles = {};
+  _columns.forEach(c => { if (_detectedRoles[c]) newRoles[c] = _detectedRoles[c]; });
+  _detectedRoles = newRoles;
+}
 
 // ── Column role detection ──────────────────────
 function detectColumnRole(col) {
@@ -52,8 +67,9 @@ function isDateColumn(data, col) {
 
 // ── Load & parse ───────────────────────────────
 function loadData(rows) {
-  _rawData = rows;
-  _columns = rows.length ? Object.keys(rows[0]) : [];
+  _rawData      = rows;
+  _originalData = [...rows];   // snapshot bản gốc
+  _columns      = rows.length ? Object.keys(rows[0]) : [];
   _detectedRoles = {};
   _columns.forEach(col => {
     const h = detectColumnRole(col);
