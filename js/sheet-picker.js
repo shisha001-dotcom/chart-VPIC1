@@ -269,7 +269,6 @@ function detectTablesInSheet(wb, sheetName) {
 // ── UI: Sheet Picker Modal ─────────────────────
 
 function _renderSheetPickerModal(wb) {
-  // Xóa modal cũ nếu có
   const old = document.getElementById('spOverlay');
   if (old) old.remove();
 
@@ -281,59 +280,82 @@ function _renderSheetPickerModal(wb) {
   overlay.innerHTML = `
     <div class="sp-modal">
       <div class="sp-header">
-        <div class="sp-title">📂 Chọn trang tính</div>
+        <div class="sp-title">🗂 Chọn sheet / bảng dữ liệu</div>
         <button class="sp-close" id="spClose">✕</button>
       </div>
-
       <div class="sp-body">
+
         <!-- Step 1: Sheet list -->
         <div class="sp-step" id="spStep1">
-          <div class="sp-step-label">Bước 1 — Chọn sheet chứa dữ liệu</div>
+          <div class="sp-step-label">Chọn trang tính — nhấn tên sheet để load ngay, hoặc nhấn "Chọn bảng" để lọc</div>
           <div class="sp-sheet-list" id="spSheetList"></div>
         </div>
 
-        <!-- Step 2: Table picker (hiện khi detect xong) -->
+        <!-- Step 2: Table picker -->
         <div class="sp-step" id="spStep2" style="display:none">
           <div class="sp-step-label">
-            Bước 2 — Chọn bảng dữ liệu
+            <span id="spStep2SheetName"></span>
             <button class="sp-back-btn" id="spBack">← Quay lại</button>
           </div>
           <div class="sp-table-list" id="spTableList"></div>
         </div>
+
       </div>
     </div>`;
 
   document.body.appendChild(overlay);
 
-  // Render sheet tabs
+  // Render sheet list
   const listEl = overlay.querySelector('#spSheetList');
   sheetNames.forEach(name => {
-    const item = document.createElement('button');
-    item.className   = 'sp-sheet-item';
-    item.textContent = name;
+    const item = document.createElement('div');
+    item.className = 'sp-sheet-item';
 
-    // Thêm badge: số dòng ước lượng
+    // Tên sheet + badge dòng
+    const nameEl = document.createElement('div');
+    nameEl.className = 'sp-sheet-name';
+    nameEl.textContent = name;
+
     try {
       const sheet = wb.Sheets[name];
       if (sheet && sheet['!ref']) {
-        const range = XLSX.utils.decode_range(sheet['!ref']);
-        const badge = document.createElement('span');
+        const range  = XLSX.utils.decode_range(sheet['!ref']);
+        const badge  = document.createElement('span');
         badge.className   = 'sp-sheet-badge';
-        badge.textContent = `${range.e.r - range.s.r + 1} dòng`;
-        item.appendChild(badge);
+        badge.textContent = `${range.e.r - range.s.r + 1} dòng × ${range.e.c - range.s.c + 1} cột`;
+        nameEl.appendChild(badge);
       }
     } catch(e) {}
 
-    item.addEventListener('click', () => _onSheetSelected(name));
+    // Nút actions
+    const actions = document.createElement('div');
+    actions.className = 'sp-sheet-actions';
+
+    const btnLoad = document.createElement('button');
+    btnLoad.className   = 'sp-btn-load';
+    btnLoad.textContent = '⚡ Load ngay';
+    btnLoad.title       = 'Tự động nhận diện và load bảng lớn nhất';
+    btnLoad.addEventListener('click', e => {
+      e.stopPropagation();
+      closeSheetPicker();
+      _autoLoadSheet(_currentWb, name);
+    });
+
+    const btnPick = document.createElement('button');
+    btnPick.className   = 'sp-btn-pick';
+    btnPick.textContent = '🔍 Chọn bảng';
+    btnPick.title       = 'Xem và chọn bảng cụ thể trong sheet này';
+    btnPick.addEventListener('click', e => {
+      e.stopPropagation();
+      _onSheetSelected(name);
+    });
+
+    actions.append(btnLoad, btnPick);
+    item.append(nameEl, actions);
     listEl.appendChild(item);
   });
 
-  // Nếu chỉ có 1 sheet, tự động chọn luôn
-  if (sheetNames.length === 1) {
-    setTimeout(() => _onSheetSelected(sheetNames[0]), 100);
-  }
-
-  // Đóng modal
+  // Đóng
   overlay.querySelector('#spClose').addEventListener('click', closeSheetPicker);
   overlay.addEventListener('click', e => { if (e.target === overlay) closeSheetPicker(); });
   overlay.querySelector('#spBack').addEventListener('click', () => {
@@ -344,7 +366,6 @@ function _renderSheetPickerModal(wb) {
 
 function _onSheetSelected(sheetName) {
   showSpinner(true);
-  // Dùng setTimeout để spinner kịp hiển thị trước khi JS chạy nặng
   setTimeout(() => {
     try {
       _detectedTables = detectTablesInSheet(_currentWb, sheetName);
@@ -356,13 +377,15 @@ function _onSheetSelected(sheetName) {
       }
 
       if (_detectedTables.length === 1) {
-        // Chỉ 1 bảng → dùng luôn
         closeSheetPicker();
         _onTableSelected?.(_detectedTables[0].rows, sheetName, _detectedTables[0]);
         return;
       }
 
-      // Nhiều bảng → hiện step 2
+      // Cập nhật label step 2
+      const labelEl = document.getElementById('spStep2SheetName');
+      if (labelEl) labelEl.textContent = `"${sheetName}" — chọn bảng muốn dùng`;
+
       _renderTablePicker(_detectedTables, sheetName);
     } catch(err) {
       showSpinner(false);
