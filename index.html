@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DataViz Studio Pro</title>
+  <title>Tạo Biểu Đồ Online</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -88,22 +88,37 @@
               <label>Chart Type</label>
               <div class="chart-type-grid" id="chartTypeGrid"></div>
             </div>
-            <div class="field-group">
+
+            <div class="field-group" id="xAxisGroup">
               <label>X Axis / Category</label>
-              <select id="xAxisSelect" class="field-select"><option value="">— Select column —</option></select>
+              <select id="xAxisSelect" class="field-select"><option value="">— Chọn cột —</option></select>
             </div>
-            <div class="field-group">
+
+            <div class="field-group" id="yAxisGroup">
               <label>Y Axis / Value</label>
-              <select id="yAxisSelect" class="field-select"><option value="">— Select column —</option></select>
+              <select id="yAxisSelect" class="field-select"><option value="">— Chọn cột —</option></select>
             </div>
+
             <div class="field-group" id="groupFieldGroup">
               <label>Group By (optional)</label>
               <select id="groupSelect" class="field-select"><option value="">— None —</option></select>
             </div>
+
             <div class="field-group" id="y2AxisGroup">
               <label>Y2 Axis (Combo)</label>
-              <select id="y2AxisSelect" class="field-select"><option value="">— Select column —</option></select>
+              <select id="y2AxisSelect" class="field-select"><option value="">— Chọn cột —</option></select>
             </div>
+
+            <!-- Combo Multi: chọn nhiều cột -->
+            <div class="field-group" id="comboMultiGroup" style="display:none">
+              <label>Cột dạng CỘT (Bar)</label>
+              <div class="combo-col-list" id="comboBarCols"></div>
+              <label style="margin-top:8px">Cột dạng ĐƯỜNG (Line)</label>
+              <div class="combo-col-list" id="comboLineCols"></div>
+              <label style="margin-top:8px">Đường dùng Trục Y phải</label>
+              <div class="combo-col-list" id="comboLineRight"></div>
+            </div>
+
             <div class="field-group">
               <label>Aggregation</label>
               <select id="aggSelect" class="field-select">
@@ -114,10 +129,12 @@
                 <option value="min">Min</option>
               </select>
             </div>
+
             <div class="field-group">
               <label>Color Palette</label>
               <div class="palette-grid" id="paletteGrid"></div>
             </div>
+
             <div class="field-group">
               <label>Chart Title</label>
               <input type="text" id="chartTitleInput" placeholder="Nhập tiêu đề biểu đồ...">
