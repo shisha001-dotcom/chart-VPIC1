@@ -180,18 +180,47 @@ function autoDetectCharts(data, roles) {
   const catCols  = cols.filter(c => roles[c] === 'category');
   const [dateCol, numCol, catCol] = [dateCols[0], numCols[0], catCols[0]];
 
+  // Xu hướng theo thời gian
   if (dateCol && numCol)
-    suggestions.push({ type:'area',   xKey:dateCol, yKey:numCol,  title:`${numCol} theo Thời gian`, groupKey:null, agg:'sum' });
-  if (catCol && numCol) {
-    suggestions.push({ type:'bar',    xKey:catCol,  yKey:numCol,  title:`${numCol} theo ${catCol}`, groupKey:null, agg:'sum' });
-    suggestions.push({ type:'donut',  xKey:catCol,  yKey:numCol,  title:`Phân phối ${catCol}`,      groupKey:null, agg:'sum' });
+    suggestions.push({ type:'area', xKey:dateCol, yKey:numCol, title:`${numCol} theo Thời gian`, groupKey:null, agg:'sum' });
+
+  // Combo Multi nếu có date + nhiều số
+  if (dateCol && numCols.length >= 3) {
+    const barCols  = numCols.slice(0, 2);
+    const lineCols = numCols.slice(2, 4);
+    suggestions.push({
+      type:'combo-multi', xKey:dateCol, yKey:numCols[0],
+      title:`Tổng quan ${numCols.slice(0,3).join(' / ')}`,
+      groupKey:null, agg:'sum',
+      extraConfig:{ barCols, lineCols, lineOnRight: lineCols },
+    });
   }
-  if (numCols.length >= 2)
+
+  // So sánh theo danh mục
+  if (catCol && numCol) {
+    suggestions.push({ type:'bar',    xKey:catCol, yKey:numCol, title:`${numCol} theo ${catCol}`, groupKey:null, agg:'sum' });
+    suggestions.push({ type:'donut',  xKey:catCol, yKey:numCol, title:`Phân phối ${catCol}`,      groupKey:null, agg:'sum' });
+  }
+
+  // Treemap nếu có category + số
+  if (catCol && numCol && suggestions.length < 4)
+    suggestions.push({ type:'treemap', xKey:catCol, yKey:numCol, title:`Treemap ${catCol}`, groupKey:null, agg:'sum' });
+
+  // Scatter nếu có >= 2 số
+  if (numCols.length >= 2 && suggestions.length < 4)
     suggestions.push({ type:'scatter', xKey:numCols[0], yKey:numCols[1], title:`${numCols[0]} vs ${numCols[1]}`, groupKey:null, agg:'sum' });
-  if (!dateCol && catCol && numCol && numCols.length >= 2)
-    suggestions.push({ type:'line',   xKey:catCol,  yKey:numCols[0], title:`Xu hướng ${numCols[0]}`, groupKey:null, agg:'avg' });
+
+  // Heatmap nếu có >= 2 category
+  if (catCols.length >= 2 && numCol && suggestions.length < 4)
+    suggestions.push({ type:'heatmap', xKey:catCols[0], yKey:numCol, groupKey:catCols[1], title:`Heatmap ${catCols[0]} × ${catCols[1]}`, agg:'sum' });
+
+  // Histogram cho cột số đầu tiên
+  if (numCol && suggestions.length < 4)
+    suggestions.push({ type:'histogram', xKey:null, yKey:numCol, title:`Phân phối ${numCol}`, groupKey:null, agg:'sum' });
+
+  // Fallback
   if (!suggestions.length && catCol)
-    suggestions.push({ type:'pie',    xKey:catCol,  yKey:numCol || null, title:`Thống kê ${catCol}`, groupKey:null, agg:'count' });
+    suggestions.push({ type:'pie', xKey:catCol, yKey:numCol || null, title:`Thống kê ${catCol}`, groupKey:null, agg:'count' });
 
   return suggestions.slice(0, 4);
 }
