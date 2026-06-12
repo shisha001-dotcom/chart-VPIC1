@@ -21,6 +21,7 @@ let _workbook = null;
 function getRawData()    { return _rawData; }
 function getColumns()    { return _columns; }
 function getRoles()      { return _detectedRoles; }
+function getWorkbook()   { return _workbook; }
 function setSheetName(n) { _currentSheetName = n; }
 
 // ── Column role detection ──────────────────────
