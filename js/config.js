@@ -1,23 +1,42 @@
 /* =============================================
    CONFIG — Hằng số toàn cục
-   Thêm chart type mới: push vào CHART_TYPES
-   Thêm palette mới:    push vào PALETTES
-   Thêm keyword nhận diện cột: thêm vào COLUMN_HINTS
    ============================================= */
 
 const CHART_TYPES = [
-  { id:'line',         label:'Line',       icon:'📈', desc:'Xu hướng theo thời gian' },
-  { id:'area',         label:'Area',       icon:'🏔', desc:'Vùng lấp đầy' },
-  { id:'bar',          label:'Bar',        icon:'📊', desc:'So sánh ngang' },
-  { id:'column',       label:'Column',     icon:'📉', desc:'So sánh dọc' },
-  { id:'column-single',label:'Col Đơn',    icon:'🟦', desc:'Cột đơn - 1 series' },
-  { id:'column-group', label:'Col Nhóm',   icon:'🟧', desc:'Cột nhóm nhiều series' },
-  { id:'combo',        label:'Combo',      icon:'📊', desc:'Cột + Đường dual-axis' },
-  { id:'pie',          label:'Pie',        icon:'🥧', desc:'Tỷ lệ %' },
-  { id:'donut',        label:'Donut',      icon:'⭕', desc:'Phân phối' },
-  { id:'scatter',      label:'Scatter',    icon:'✦',  desc:'Tương quan' },
-  { id:'radar',        label:'Radar',      icon:'◎',  desc:'Đa trục' },
-  { id:'boxplot',      label:'Box Plot',   icon:'📦', desc:'Phân phối' },
+  // ── Trend ──
+  { id:'line',         label:'Line',        icon:'📈', desc:'Xu hướng theo thời gian',      group:'trend' },
+  { id:'area',         label:'Area',        icon:'🏔',  desc:'Vùng lấp đầy',                group:'trend' },
+  // ── Comparison ──
+  { id:'bar',          label:'Bar',         icon:'📊', desc:'So sánh ngang',                group:'compare' },
+  { id:'column',       label:'Column',      icon:'📉', desc:'So sánh dọc',                  group:'compare' },
+  { id:'column-single',label:'Col Đơn',     icon:'🟦', desc:'Cột đơn - 1 series',           group:'compare' },
+  { id:'column-group', label:'Col Nhóm',    icon:'🟧', desc:'Cột nhóm nhiều series',        group:'compare' },
+  { id:'waterfall',    label:'Waterfall',   icon:'🌊', desc:'Tăng/giảm tích lũy',           group:'compare' },
+  // ── Combo ──
+  { id:'combo',        label:'Combo',       icon:'📊', desc:'Cột + Đường dual-axis',        group:'combo' },
+  { id:'combo-multi',  label:'Combo Pro',   icon:'🔀', desc:'N cột + M đường, multi-axis',  group:'combo' },
+  // ── Distribution ──
+  { id:'pie',          label:'Pie',         icon:'🥧', desc:'Tỷ lệ %',                      group:'dist' },
+  { id:'donut',        label:'Donut',       icon:'⭕', desc:'Phân phối',                    group:'dist' },
+  { id:'treemap',      label:'Treemap',     icon:'🗺',  desc:'Ô vuông tỷ lệ',               group:'dist' },
+  { id:'funnel',       label:'Funnel',      icon:'🔻', desc:'Phễu chuyển đổi',              group:'dist' },
+  { id:'histogram',    label:'Histogram',   icon:'📶', desc:'Phân phối tần suất',           group:'dist' },
+  // ── Correlation ──
+  { id:'scatter',      label:'Scatter',     icon:'✦',  desc:'Tương quan',                  group:'corr' },
+  { id:'heatmap',      label:'Heatmap',     icon:'🌡',  desc:'Ma trận màu',                 group:'corr' },
+  // ── Multi-dim ──
+  { id:'radar',        label:'Radar',       icon:'◎',  desc:'Đa trục',                     group:'multi' },
+  { id:'boxplot',      label:'Box Plot',    icon:'📦', desc:'Phân phối thống kê',           group:'multi' },
+];
+
+// Nhóm chart type để hiển thị trong builder (label nhóm)
+const CHART_TYPE_GROUPS = [
+  { id:'trend',   label:'Xu hướng' },
+  { id:'compare', label:'So sánh' },
+  { id:'combo',   label:'Kết hợp' },
+  { id:'dist',    label:'Phân phối' },
+  { id:'corr',    label:'Tương quan' },
+  { id:'multi',   label:'Đa chiều' },
 ];
 
 const PALETTES = [
@@ -29,7 +48,6 @@ const PALETTES = [
   { id:'neon',   name:'Neon',   colors:['#00f5ff','#ff00ff','#00ff88','#ffff00','#ff6600','#0080ff','#ff0088','#88ff00'], swatch:'linear-gradient(135deg,#00f5ff,#ff00ff)' },
 ];
 
-// Cấu hình mặc định cho ApexCharts (dark theme)
 const APEX_BASE = {
   chart: {
     background:'transparent',
@@ -44,9 +62,8 @@ const APEX_BASE = {
   dataLabels:{ enabled:false },
 };
 
-// Keyword dùng để tự động nhận diện vai trò cột
 const COLUMN_HINTS = {
   date:     ['date','day','month','year','week','ngày','tháng','năm','time','period','quarter','q1','q2','q3','q4','thời gian','giai đoạn','kỳ'],
-  numeric:  ['revenue','sales','amount','price','value','quantity','qty','count','total','sum','profit','cost','income','loss','doanh','tiền','số','giá','tổng','đơn','lợi nhuận','chi phí','doanh thu','số lượng'],
+  numeric:  ['revenue','sales','amount','price','value','quantity','qty','count','total','sum','profit','cost','income','loss','doanh','tiền','số','giá','tổng','đơn','lợi nhuận','chi phí','doanh thu','số lượng','margin','rate','ratio','%','pct','percent','tỷ lệ','tỉ lệ'],
   category: ['category','type','segment','region','status','group','class','label','name','product','channel','danh','loại','nhóm','tên','khu','sản phẩm','phòng ban','bộ phận','kênh'],
 };
