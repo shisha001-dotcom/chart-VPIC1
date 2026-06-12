@@ -1,0 +1,50 @@
+/* =============================================
+   BASE — CSS variables, reset, scrollbar
+   Sửa màu/font/spacing toàn app ở đây
+   ============================================= */
+
+:root {
+  --bg:        #0d0f12;
+  --bg2:       #13161b;
+  --bg3:       #1a1e26;
+  --bg4:       #20252f;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.13);
+  --text:      #e8eaf0;
+  --text2:     #8b92a5;
+  --text3:     #4f5668;
+  --accent:    #4f8ef7;
+  --accent2:   #6ee7b7;
+  --accent3:   #f472b6;
+  --accent4:   #fbbf24;
+  --red:       #f87171;
+  --green:     #4ade80;
+  --sidebar-w: 224px;
+  --topbar-h:  56px;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --font:      'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --shadow:    0 2px 14px rgba(0,0,0,0.45);
+  --shadow-lg: 0 8px 36px rgba(0,0,0,0.55);
+  --tr:        0.17s ease;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button { cursor:pointer; }
+input, select, button { font-family: var(--font); }
+
+/* Scrollbar */
+* { scrollbar-width: thin; scrollbar-color: var(--bg3) transparent; }
+*::-webkit-scrollbar       { width:5px; height:5px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--bg3); border-radius:99px; }
