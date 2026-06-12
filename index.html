@@ -147,6 +147,26 @@
             <button class="btn-table" id="exportCsvBtn" disabled>⬇ Export CSV</button>
             <span class="table-count" id="tableCount"></span>
           </div>
+
+          <!-- Selection action bar — hiện khi có dòng được chọn -->
+          <div class="selection-bar" id="selectionBar">
+            <span class="sel-count" id="selCount"></span>
+            <div class="sel-actions">
+              <button class="sel-btn danger"   id="btnDeleteSelected" title="Xóa các dòng đã chọn khỏi dữ liệu">
+                🗑 Xóa dòng đã chọn
+              </button>
+              <button class="sel-btn primary"  id="btnKeepSelected"   title="Chỉ giữ lại các dòng đã chọn">
+                ✓ Chỉ giữ dòng đã chọn
+              </button>
+              <button class="sel-btn ghost"    id="btnClearSel"       title="Bỏ chọn tất cả">
+                Bỏ chọn
+              </button>
+            </div>
+            <button class="sel-btn reset" id="btnResetData" title="Khôi phục toàn bộ dữ liệu gốc">
+              ↺ Reset dữ liệu gốc
+            </button>
+          </div>
+
           <div class="table-scroll">
             <table id="dataTable"><thead></thead><tbody></tbody></table>
           </div>
