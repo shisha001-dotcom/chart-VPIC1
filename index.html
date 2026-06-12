@@ -3,13 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tạo Biểu Đồ Online</title>
+  <title>DataViz Studio Pro</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<link rel="stylesheet" href="style.css">
+  <!-- Stylesheets — thứ tự quan trọng (base trước) -->
+  <link rel="stylesheet" href="css/base.css">         <!-- Variables, reset -->
+  <link rel="stylesheet" href="css/layout.css">       <!-- Sidebar, topbar, responsive -->
+  <link rel="stylesheet" href="css/components.css">   <!-- Buttons, toast, modal, form -->
+  <link rel="stylesheet" href="css/dashboard.css">    <!-- KPI cards, chart blocks, ApexCharts -->
+  <link rel="stylesheet" href="css/builder.css">      <!-- Chart builder panel -->
+  <link rel="stylesheet" href="css/table.css">        <!-- Data table, row selection -->
+  <link rel="stylesheet" href="css/sheet-picker.css"> <!-- Sheet picker modal -->
 
 </head>
 <body>
