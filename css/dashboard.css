@@ -1,0 +1,115 @@
+/* =============================================
+   DASHBOARD — KPI cards, chart blocks, switch row
+   Thêm widget dashboard mới vào đây
+   ============================================= */
+
+/* ── Header ── */
+.dashboard-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
+}
+.dashboard-header h2          { font-size: 18px; font-weight: 700; letter-spacing: -.025em; }
+.dashboard-header-actions     { display: none; align-items: center; gap: 8px; }
+
+/* ── KPI cards ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px; margin-bottom: 22px;
+}
+.kpi-empty {
+  grid-column: 1/-1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; padding: 70px 20px;
+  border: 2px dashed var(--border2); border-radius: var(--radius-lg);
+  color: var(--text3);
+}
+.kpi-empty .empty-icon { font-size: 38px; opacity:.25; }
+.kpi-empty p           { font-size: 13.5px; }
+
+.kpi-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 18px;
+  position: relative; overflow: hidden;
+  transition: border-color var(--tr), transform var(--tr);
+  animation: slideUp .3s ease both;
+}
+.kpi-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+.kpi-card::before {
+  content:''; position: absolute;
+  top:0; left:0; right:0; height: 2px;
+  background: var(--kpi-color, var(--accent)); opacity:.75;
+}
+.kpi-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing:.09em; color: var(--text3); margin-bottom: 7px; }
+.kpi-value { font-size: 24px; font-weight: 700; letter-spacing: -.025em; font-family: var(--font-mono); color: var(--text); }
+.kpi-sub   { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.kpi-icon  { position: absolute; top: 16px; right: 16px; font-size: 20px; opacity:.4; }
+
+/* ── Charts grid & blocks ── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+  gap: 18px;
+}
+.chart-block {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+  animation: slideUp .35s ease both; transition: border-color var(--tr);
+}
+.chart-block:hover { border-color: var(--border2); }
+
+.chart-block-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px; border-bottom: 1px solid var(--border);
+}
+.chart-block-actions { display: flex; gap: 6px; }
+.chart-block-btn {
+  background: none; border: 1px solid var(--border);
+  color: var(--text3); font-size: 11.5px; padding: 3px 9px;
+  border-radius: 6px; transition: all var(--tr);
+}
+.chart-block-btn:hover        { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+.chart-block-btn.danger:hover { color: var(--red); border-color: var(--red); }
+.chart-block-body             { padding: 6px 8px 10px; }
+
+.chart-title-input {
+  background: transparent; border: none; outline: none;
+  color: var(--text); font-size: 13px; font-weight: 600;
+  font-family: var(--font); width: 100%; cursor: pointer;
+}
+.chart-title-input:focus { border-bottom: 1px solid var(--accent); cursor: text; }
+
+/* ── Chart switch row ── */
+.chart-switch-row {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 8px 14px; border-top: 1px solid var(--border); background: var(--bg3);
+}
+.chart-switch-label {
+  font-size: 10.5px; color: var(--text3); font-weight: 600;
+  text-transform: uppercase; letter-spacing:.07em; margin-right: 4px;
+}
+.chart-switch-btn {
+  padding: 3px 9px; font-size: 11px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 20px; color: var(--text3); transition: all var(--tr);
+}
+.chart-switch-btn:hover  { border-color: var(--border2); color: var(--text); }
+.chart-switch-btn.active { background: rgba(79,142,247,.15); border-color: var(--accent); color: var(--accent); }
+
+/* ── ApexCharts dark theme overrides ── */
+.apexcharts-canvas                           { background: transparent !important; }
+.apexcharts-text,
+.apexcharts-title-text,
+.apexcharts-legend-text                      { fill: #8b92a5 !important; font-family: 'DM Sans', sans-serif !important; }
+.apexcharts-xaxis-label,
+.apexcharts-yaxis-label                      { fill: #4f5668 !important; }
+.apexcharts-gridline                         { stroke: rgba(255,255,255,0.05) !important; }
+.apexcharts-tooltip                          { background: #1a1e26 !important; border: 1px solid rgba(255,255,255,0.12) !important; box-shadow: 0 8px 24px rgba(0,0,0,.45) !important; border-radius: 8px !important; }
+.apexcharts-tooltip-title                    { background: #13161b !important; border-bottom: 1px solid rgba(255,255,255,0.07) !important; color: #e8eaf0 !important; font-family: 'DM Sans', sans-serif !important; }
+.apexcharts-tooltip-text                     { color: #e8eaf0 !important; font-family: 'DM Sans', sans-serif !important; }
+.apexcharts-xaxistooltip,
+.apexcharts-yaxistooltip                     { background: #1a1e26 !important; border: 1px solid rgba(255,255,255,0.12) !important; color: #e8eaf0 !important; }
+.apexcharts-menu                             { background: #1a1e26 !important; border: 1px solid rgba(255,255,255,0.12) !important; }
+.apexcharts-menu-item:hover                  { background: #13161b !important; }
+.apexcharts-legend                           { padding: 0 8px 4px !important; }
