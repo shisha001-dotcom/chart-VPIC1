@@ -67,57 +67,68 @@ function setupFileUpload() {
     else showToast('Chỉ hỗ trợ .xlsx, .xls, .csv', 'error');
   });
 
-  // Sheet switcher
-  document.getElementById('sheetSelect').addEventListener('change', e => {
-    if (!_workbook) return;
-    try {
-      const rows = parseSheet(_workbook, e.target.value);
-      if (!rows.length) { showToast('Sheet rỗng', 'error'); return; }
-      setSheetName(e.target.value);
-      const result = loadData(rows);
-      populateColumnSelects(result.columns, result.roles);
-      generateDashboard(rows, result.roles);
-      renderDataTable(rows);
-      showToast(`✓ Đã chuyển sang sheet: ${e.target.value}`, 'success');
-    } catch(err) { showToast('Lỗi đọc sheet: ' + err.message, 'error'); }
-  });
+  // Sheet switcher được thay bằng Sheet Picker modal (js/sheet-picker.js)
+  // Nút "Đổi sheet" trong sidebar có thể mở lại picker nếu cần
 }
 
 async function loadFile(file) {
   if (!file) return;
   try {
     showSpinner(true);
-    const wb        = await parseExcelFile(file);
-    const sheetName = wb.SheetNames[0];
-    const rows      = parseSheet(wb, sheetName);
-    if (!rows.length) { showToast('File Excel rỗng', 'error'); showSpinner(false); return; }
+    const wb = await parseExcelFile(file);
+    showSpinner(false);
 
-    setSheetName(sheetName);
-    const result = loadData(rows);
-
+    // Cập nhật tên file trên sidebar
     document.getElementById('fileInfo').textContent = `📄 ${file.name}`;
+    _pendingFileName = file.name;
 
-    const sheetSel       = document.getElementById('sheetSelect');
-    const sheetContainer = document.getElementById('sheetSelector');
-    sheetSel.innerHTML   = wb.SheetNames.map(n => `<option${n === sheetName ? ' selected' : ''}>${n}</option>`).join('');
-    sheetContainer.style.display = wb.SheetNames.length > 1 ? 'flex' : 'none';
+    // Mở Sheet Picker — callback được gọi sau khi người dùng chọn bảng
+    openSheetPicker(wb, (rows, sheetName, tableInfo) => {
+      _applyTableData(rows, sheetName, tableInfo);
+    });
 
-    populateColumnSelects(result.columns, result.roles);
-    generateDashboard(rows, result.roles);
-    renderDataTable(rows);
-
-    document.getElementById('exportDashboardBtn').disabled  = false;
-    document.getElementById('refreshBtn').disabled          = false;
-    document.getElementById('exportCsvBtn').disabled        = false;
-    document.getElementById('dashHeaderActions').style.display = 'flex';
-    document.getElementById('dashboardTitle').textContent   = file.name.replace(/\.[^.]+$/, '');
-
-    document.querySelector('[data-view="dashboard"]').click();
-    showToast(`✓ Đã tải ${rows.length.toLocaleString()} dòng từ "${sheetName}"`, 'success', 4000);
   } catch(err) {
+    showSpinner(false);
     showToast('Lỗi: ' + err.message, 'error');
     console.error(err);
-  } finally { showSpinner(false); }
+  }
+}
+
+// Tên file đang chờ xử lý
+let _pendingFileName = '';
+
+/**
+ * Áp dụng dữ liệu bảng đã chọn vào app
+ */
+function _applyTableData(rows, sheetName, tableInfo) {
+  if (!rows || !rows.length) {
+    showToast('Bảng dữ liệu rỗng', 'error');
+    return;
+  }
+
+  setSheetName(sheetName);
+  const result = loadData(rows);
+
+  populateColumnSelects(result.columns, result.roles);
+  generateDashboard(rows, result.roles);
+  renderDataTable(rows);
+
+  document.getElementById('exportDashboardBtn').disabled     = false;
+  document.getElementById('refreshBtn').disabled             = false;
+  document.getElementById('exportCsvBtn').disabled           = false;
+  document.getElementById('dashHeaderActions').style.display = 'flex';
+  document.getElementById('dashboardTitle').textContent      =
+    _pendingFileName.replace(/\.[^.]+$/, '') + (tableInfo ? ` — ${tableInfo.label}` : '');
+
+  // Ẩn sheet selector cũ (không dùng nữa, picker thay thế)
+  document.getElementById('sheetSelector').style.display = 'none';
+
+  document.querySelector('[data-view="dashboard"]').click();
+
+  const tableDesc = tableInfo
+    ? ` (${tableInfo.label}: ${rows.length.toLocaleString()} dòng × ${tableInfo.colCount} cột)`
+    : ` (${rows.length.toLocaleString()} dòng)`;
+  showToast(`✓ Đã tải "${sheetName}"${tableDesc}`, 'success', 4000);
 }
 
 // ── Column selects ─────────────────────────────
