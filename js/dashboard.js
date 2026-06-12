@@ -41,15 +41,21 @@ function getAlternativeTypes(currentType) {
     line:           ['line','area','column','bar'],
     area:           ['area','line','column','bar'],
     bar:            ['bar','column','line','area'],
-    column:         ['column','bar','line','area'],
-    'column-single':['column-single','column','bar'],
-    'column-group': ['column-group','column','bar'],
-    combo:          ['combo','line','column'],
-    pie:            ['pie','donut'],
-    donut:          ['donut','pie'],
-    scatter:        ['scatter'],
-    radar:          ['radar'],
-    boxplot:        ['boxplot'],
+    column:          ['column','bar','waterfall','line'],
+    'column-single': ['column-single','column','bar'],
+    'column-group':  ['column-group','column','bar'],
+    waterfall:       ['waterfall','column','bar'],
+    combo:           ['combo','combo-multi','line','column'],
+    'combo-multi':   ['combo-multi','combo','line','column'],
+    pie:             ['pie','donut','treemap','funnel'],
+    donut:           ['donut','pie','treemap'],
+    treemap:         ['treemap','pie','donut'],
+    funnel:          ['funnel','bar','pie'],
+    histogram:       ['histogram','boxplot'],
+    scatter:         ['scatter','heatmap'],
+    heatmap:         ['heatmap','scatter'],
+    radar:           ['radar'],
+    boxplot:         ['boxplot','histogram'],
   };
   return (groups[currentType] || [currentType]).slice(0, 4);
 }
@@ -60,7 +66,8 @@ function addChartToDashboard(config, data, index) {
   const colors  = PALETTES[index % PALETTES.length].colors;
   const chartConfig = buildChartConfig(
     config.type, data, colors,
-    config.xKey, config.yKey, config.groupKey, config.agg, config.y2Key
+    config.xKey, config.yKey, config.groupKey, config.agg, config.y2Key,
+    config.extraConfig
   );
   if (!chartConfig) return;
 
