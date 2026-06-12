@@ -546,28 +546,45 @@ td.numeric { font-family: var(--font-mono); text-align: right; color: var(--acce
 
 /* Step 1 — Sheet list */
 .sp-sheet-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 10px;
+  display: flex; flex-direction: column; gap: 8px;
 }
 .sp-sheet-item {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
-  padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 12px 16px;
   background: var(--bg3); border: 1px solid var(--border);
-  border-radius: var(--radius); cursor: pointer;
-  font-size: 13px; font-weight: 500; color: var(--text);
-  text-align: left;
-  transition: border-color var(--tr), background var(--tr), transform var(--tr);
+  border-radius: var(--radius);
+  transition: border-color var(--tr), background var(--tr);
 }
 .sp-sheet-item:hover {
-  border-color: var(--accent);
-  background: rgba(79,142,247,.08);
-  transform: translateY(-2px);
+  border-color: var(--border2);
+  background: var(--bg4);
+}
+.sp-sheet-name {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+  flex: 1; min-width: 0;
 }
 .sp-sheet-badge {
   font-size: 10.5px; color: var(--text3);
-  font-family: var(--font-mono);
+  font-family: var(--font-mono); font-weight: 400;
+  flex-shrink: 0;
 }
+.sp-sheet-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.sp-btn-load {
+  padding: 5px 12px; font-size: 12px; font-weight: 600;
+  background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius); cursor: pointer;
+  transition: opacity var(--tr);
+}
+.sp-btn-load:hover { opacity: .85; }
+.sp-btn-pick {
+  padding: 5px 12px; font-size: 12px; font-weight: 500;
+  background: transparent; color: var(--text2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius); cursor: pointer;
+  transition: all var(--tr);
+}
+.sp-btn-pick:hover { background: var(--bg4); color: var(--text); }
 
 /* Step 2 — Table picker */
 .sp-table-list { display: flex; flex-direction: column; gap: 16px; }
@@ -637,4 +654,19 @@ td.numeric { font-family: var(--font-mono); text-align: right; color: var(--acce
   .sp-sheet-list { grid-template-columns: 1fr 1fr; }
   .sp-table-meta { gap: 8px; }
   .sp-table-ratio { margin-left: 0; }
+}
+
+/* ── Switch Sheet Button ── */
+.btn-switch-sheet {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: rgba(79,142,247,.12);
+  border: 1px solid rgba(79,142,247,.35);
+  color: var(--accent); font-size: 13px; font-weight: 600;
+  border-radius: var(--radius);
+  transition: all var(--tr); white-space: nowrap; cursor: pointer;
+}
+.btn-switch-sheet:hover {
+  background: rgba(79,142,247,.22);
+  border-color: var(--accent);
 }
