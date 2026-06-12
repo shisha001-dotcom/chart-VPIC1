@@ -71,21 +71,25 @@ function setupFileUpload() {
   // Nút "Đổi sheet" trong sidebar có thể mở lại picker nếu cần
 }
 
+// Trạng thái file hiện tại — dùng lại khi đổi sheet
+let _pendingFileName = '';
+
 async function loadFile(file) {
   if (!file) return;
   try {
     showSpinner(true);
-    const wb = await parseExcelFile(file);
+    const wb = await parseExcelFile(file);  // lưu vào _workbook trong data.js
     showSpinner(false);
 
-    // Cập nhật tên file trên sidebar
-    document.getElementById('fileInfo').textContent = `📄 ${file.name}`;
     _pendingFileName = file.name;
+    document.getElementById('fileInfo').textContent = `📄 ${file.name}`;
 
-    // Mở Sheet Picker — callback được gọi sau khi người dùng chọn bảng
-    openSheetPicker(wb, (rows, sheetName, tableInfo) => {
-      _applyTableData(rows, sheetName, tableInfo);
-    });
+    // Hiện nút "Đổi sheet" nếu có nhiều sheet
+    _updateSwitchBtn(wb);
+
+    // Auto-load sheet đầu tiên ngay lập tức — không cần picker
+    const firstSheet = wb.SheetNames[0];
+    _autoLoadSheet(wb, firstSheet);
 
   } catch(err) {
     showSpinner(false);
@@ -94,11 +98,46 @@ async function loadFile(file) {
   }
 }
 
-// Tên file đang chờ xử lý
-let _pendingFileName = '';
+/**
+ * Tự động nhận diện bảng trong sheet và load bảng lớn nhất (không hỏi user)
+ */
+function _autoLoadSheet(wb, sheetName) {
+  showSpinner(true);
+  setTimeout(() => {
+    try {
+      const tables = detectTablesInSheet(wb, sheetName);
+
+      if (!tables.length) {
+        // Fallback: dùng sheet_to_json thông thường nếu detector không tìm thấy
+        const rows = parseSheet(wb, sheetName);
+        showSpinner(false);
+        if (!rows.length) { showToast('Sheet không có dữ liệu', 'error'); return; }
+        _applyTableData(rows, sheetName, null);
+        return;
+      }
+
+      // Lấy bảng lớn nhất (index 0 vì đã sort theo size)
+      const best = tables[0];
+      showSpinner(false);
+      _applyTableData(best.rows, sheetName, best);
+
+      // Nếu sheet có nhiều bảng, gợi ý người dùng
+      if (tables.length > 1) {
+        showToast(
+          `Tìm thấy ${tables.length} bảng trong "${sheetName}" — đã chọn bảng lớn nhất. Nhấn "Đổi sheet/bảng" để chọn lại.`,
+          'info', 5000
+        );
+      }
+    } catch(err) {
+      showSpinner(false);
+      showToast('Lỗi đọc sheet: ' + err.message, 'error');
+      console.error(err);
+    }
+  }, 30);
+}
 
 /**
- * Áp dụng dữ liệu bảng đã chọn vào app
+ * Áp dụng dữ liệu bảng đã chọn vào toàn bộ app
  */
 function _applyTableData(rows, sheetName, tableInfo) {
   if (!rows || !rows.length) {
@@ -117,18 +156,43 @@ function _applyTableData(rows, sheetName, tableInfo) {
   document.getElementById('refreshBtn').disabled             = false;
   document.getElementById('exportCsvBtn').disabled           = false;
   document.getElementById('dashHeaderActions').style.display = 'flex';
-  document.getElementById('dashboardTitle').textContent      =
-    _pendingFileName.replace(/\.[^.]+$/, '') + (tableInfo ? ` — ${tableInfo.label}` : '');
 
-  // Ẩn sheet selector cũ (không dùng nữa, picker thay thế)
+  // Tiêu đề dashboard: tên file + sheet + bảng
+  const baseName   = _pendingFileName.replace(/\.[^.]+$/, '');
+  const tableLabel = tableInfo ? ` › ${tableInfo.label}` : '';
+  document.getElementById('dashboardTitle').textContent = `${baseName} › ${sheetName}${tableLabel}`;
+
   document.getElementById('sheetSelector').style.display = 'none';
-
   document.querySelector('[data-view="dashboard"]').click();
 
-  const tableDesc = tableInfo
-    ? ` (${tableInfo.label}: ${rows.length.toLocaleString()} dòng × ${tableInfo.colCount} cột)`
-    : ` (${rows.length.toLocaleString()} dòng)`;
-  showToast(`✓ Đã tải "${sheetName}"${tableDesc}`, 'success', 4000);
+  const desc = tableInfo
+    ? `${tableInfo.rowCount.toLocaleString()} dòng × ${tableInfo.colCount} cột`
+    : `${rows.length.toLocaleString()} dòng`;
+  showToast(`✓ "${sheetName}"${tableInfo ? ' — ' + tableInfo.label : ''} (${desc})`, 'success', 3500);
+}
+
+/**
+ * Hiện / ẩn nút "Đổi sheet" tùy số lượng sheet
+ * Nếu chỉ 1 sheet thì vẫn hiện để người dùng có thể đổi bảng
+ */
+function _updateSwitchBtn(wb) {
+  const btn = document.getElementById('switchSheetBtn');
+  if (!btn) return;
+  btn.style.display = 'flex';
+  btn.textContent   = wb.SheetNames.length > 1
+    ? `🗂 ${wb.SheetNames.length} sheets`
+    : '🗂 Đổi bảng';
+}
+
+/**
+ * Mở Sheet Picker để chuyển sheet/bảng — gọi từ nút trên topbar
+ */
+function openSwitchPicker() {
+  const wb = getWorkbook();
+  if (!wb) { showToast('Chưa có file nào được tải', 'error'); return; }
+  openSheetPicker(wb, (rows, sheetName, tableInfo) => {
+    _applyTableData(rows, sheetName, tableInfo);
+  });
 }
 
 // ── Column selects ─────────────────────────────
